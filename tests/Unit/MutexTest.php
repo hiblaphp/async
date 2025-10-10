@@ -5,134 +5,152 @@ use function Hibla\async;
 use function Hibla\await;
 use function Hibla\delay;
 
-beforeEach(function () {
-    $this->mutex = new Mutex();
-    $this->sharedCounter = 0;
-    $this->sharedLog = [];
-});
+function mutexTestSetup(): array
+{
+    return [
+        'mutex' => new Mutex(),
+        'sharedCounter' => 0,
+        'sharedLog' => [],
+    ];
+}
 
 describe('Basic Mutex Operations', function () {
     it('starts in unlocked state', function () {
-        expect($this->mutex->isLocked())->toBeFalse();
-        expect($this->mutex->getQueueLength())->toBe(0);
-        expect($this->mutex->isQueueEmpty())->toBeTrue();
+        $setup = mutexTestSetup();
+        $mutex = $setup['mutex'];
+
+        expect($mutex->isLocked())->toBeFalse();
+        expect($mutex->getQueueLength())->toBe(0);
+        expect($mutex->isQueueEmpty())->toBeTrue();
     });
 
     it('can acquire and release lock', function () {
-        $lockPromise = $this->mutex->acquire();
-        expect($this->mutex->isLocked())->toBeTrue();
+        $setup = mutexTestSetup();
+        $mutex = $setup['mutex'];
+
+        $lockPromise = $mutex->acquire();
+        expect($mutex->isLocked())->toBeTrue();
 
         $acquiredMutex = await($lockPromise);
-        expect($acquiredMutex)->toBe($this->mutex);
+        expect($acquiredMutex)->toBe($mutex);
 
         $acquiredMutex->release();
-        expect($this->mutex->isLocked())->toBeFalse();
+        expect($mutex->isLocked())->toBeFalse();
     });
 
     it('queues multiple acquire attempts', function () {
-        // First acquire - should succeed immediately
-        $firstLock = await($this->mutex->acquire());
-        expect($this->mutex->isLocked())->toBeTrue();
+        $setup = mutexTestSetup();
+        $mutex = $setup['mutex'];
 
-        // Second acquire - should be queued
-        $secondLockPromise = $this->mutex->acquire();
-        expect($this->mutex->getQueueLength())->toBe(1);
+        $firstLock = await($mutex->acquire());
+        expect($mutex->isLocked())->toBeTrue();
 
-        // Third acquire - should also be queued
-        $thirdLockPromise = $this->mutex->acquire();
-        expect($this->mutex->getQueueLength())->toBe(2);
+        $secondLockPromise = $mutex->acquire();
+        expect($mutex->getQueueLength())->toBe(1);
 
-        // Release first lock
+        $thirdLockPromise = $mutex->acquire();
+        expect($mutex->getQueueLength())->toBe(2);
+
         $firstLock->release();
-        expect($this->mutex->isLocked())->toBeTrue(); // Still locked by second waiter
-        expect($this->mutex->getQueueLength())->toBe(1);
+        expect($mutex->isLocked())->toBeTrue();
+        expect($mutex->getQueueLength())->toBe(1);
 
-        // Second lock should now be available
         $secondLock = await($secondLockPromise);
         $secondLock->release();
-        expect($this->mutex->getQueueLength())->toBe(0);
+        expect($mutex->getQueueLength())->toBe(0);
 
-        // Third lock should now be available
         $thirdLock = await($thirdLockPromise);
         $thirdLock->release();
-        expect($this->mutex->isLocked())->toBeFalse();
+        expect($mutex->isLocked())->toBeFalse();
     });
 });
 
 describe('Concurrent Access Protection', function () {
     it('protects shared resource from race conditions', function () {
+        $setup = mutexTestSetup();
+        $mutex = $setup['mutex'];
+        $sharedCounter = &$setup['sharedCounter'];
+        $sharedLog = &$setup['sharedLog'];
+        
         $tasks = [];
         
         for ($i = 1; $i <= 5; $i++) {
-            $tasks[] = async(function() use ($i) {
-                $lock = await($this->mutex->acquire());
+            $tasks[] = async(function() use ($i, $mutex, &$sharedCounter, &$sharedLog) {
+                $lock = await($mutex->acquire());
                 
-                $oldValue = $this->sharedCounter;
-                await(delay(0.01)); // Small delay to simulate work
-                $this->sharedCounter++;
-                $this->sharedLog[] = "Task-$i: $oldValue -> {$this->sharedCounter}";
+                $oldValue = $sharedCounter;
+                await(delay(0.01));
+                $sharedCounter++;
+                $sharedLog[] = "Task-$i: $oldValue -> {$sharedCounter}";
                 
                 $lock->release();
                 return "Task-$i completed";
             });
         }
 
-        // Wait for all tasks
         foreach ($tasks as $task) {
             await($task);
         }
 
-        expect($this->sharedCounter)->toBe(5);
-        expect(count($this->sharedLog))->toBe(5);
+        expect($sharedCounter)->toBe(5);
+        expect(count($sharedLog))->toBe(5);
         
-        // Verify sequential execution (no overlapping increments)
-        foreach ($this->sharedLog as $index => $entry) {
+        foreach ($sharedLog as $index => $entry) {
             expect($entry)->toContain("$index -> " . ($index + 1));
         }
     });
 
     it('handles quick succession acquire/release', function () {
+        $setup = mutexTestSetup();
+        $mutex = $setup['mutex'];
+
         for ($i = 1; $i <= 10; $i++) {
-            $lock = await($this->mutex->acquire());
-            expect($this->mutex->isLocked())->toBeTrue();
+            $lock = await($mutex->acquire());
+            expect($mutex->isLocked())->toBeTrue();
             $lock->release();
         }
 
-        expect($this->mutex->isLocked())->toBeFalse();
-        expect($this->mutex->isQueueEmpty())->toBeTrue();
+        expect($mutex->isLocked())->toBeFalse();
+        expect($mutex->isQueueEmpty())->toBeTrue();
     });
 });
 
 describe('Mutex State Inspection', function () {
     it('correctly reports lock state', function () {
-        expect($this->mutex->isLocked())->toBeFalse();
+        $setup = mutexTestSetup();
+        $mutex = $setup['mutex'];
+
+        expect($mutex->isLocked())->toBeFalse();
         
-        $lock = await($this->mutex->acquire());
-        expect($this->mutex->isLocked())->toBeTrue();
+        $lock = await($mutex->acquire());
+        expect($mutex->isLocked())->toBeTrue();
         
         $lock->release();
-        expect($this->mutex->isLocked())->toBeFalse();
+        expect($mutex->isLocked())->toBeFalse();
     });
 
     it('correctly reports queue length', function () {
-        $firstLock = await($this->mutex->acquire());
-        expect($this->mutex->getQueueLength())->toBe(0);
+        $setup = mutexTestSetup();
+        $mutex = $setup['mutex'];
 
-        $secondPromise = $this->mutex->acquire();
-        expect($this->mutex->getQueueLength())->toBe(1);
+        $firstLock = await($mutex->acquire());
+        expect($mutex->getQueueLength())->toBe(0);
 
-        $thirdPromise = $this->mutex->acquire();
-        expect($this->mutex->getQueueLength())->toBe(2);
+        $secondPromise = $mutex->acquire();
+        expect($mutex->getQueueLength())->toBe(1);
+
+        $thirdPromise = $mutex->acquire();
+        expect($mutex->getQueueLength())->toBe(2);
 
         $firstLock->release();
-        expect($this->mutex->getQueueLength())->toBe(1);
+        expect($mutex->getQueueLength())->toBe(1);
 
         $secondLock = await($secondPromise);
         $secondLock->release();
-        expect($this->mutex->getQueueLength())->toBe(0);
+        expect($mutex->getQueueLength())->toBe(0);
 
         $thirdLock = await($thirdPromise);
         $thirdLock->release();
-        expect($this->mutex->isQueueEmpty())->toBeTrue();
+        expect($mutex->isQueueEmpty())->toBeTrue();
     });
 });

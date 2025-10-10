@@ -7,7 +7,12 @@
 */
 
 use Hibla\Async\Async;
+use Hibla\Async\Handlers\AsyncExecutionHandler;
+use Hibla\Async\Handlers\ConcurrencyHandler;
+use Hibla\Async\Handlers\PromiseCollectionHandler;
+use Hibla\Async\Mutex;
 use Hibla\EventLoop\EventLoop;
+use Hibla\EventLoop\Loop;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
@@ -51,6 +56,56 @@ function waitForPromise(PromiseInterface $promise): mixed
 |--------------------------------------------------------------------------
 */
 
+function mutex(): Mutex
+{
+    return new Mutex();
+}
+
+function delayedValue($value, $delayMs)
+{
+    return new Promise(function ($resolve) use ($value, $delayMs) {
+        scheduleResolve($resolve, $value, $delayMs);
+    });
+}
+
+function delayedReject($error, $delayMs)
+{
+    return new Promise(function ($resolve, $reject) use ($error, $delayMs) {
+        scheduleReject($reject, $error, $delayMs);
+    });
+}
+
+function scheduleResolve($resolve, $value, $delayMs)
+{
+    Loop::addTimer($delayMs / 1000, function () use ($resolve, $value) {
+        $resolve($value);
+    });
+}
+
+function scheduleReject($reject, $error, $delayMs)
+{
+    Loop::addTimer($delayMs / 1000, function () use ($reject, $error) {
+        $reject($error);
+    });
+}
+
+function concurrencyHandler(): ConcurrencyHandler
+{
+    return new ConcurrencyHandler(new AsyncExecutionHandler());
+}
+
+function promiseCollectionHandler(): PromiseCollectionHandler
+{
+    return new PromiseCollectionHandler();
+}
+
+function complexScenarioHandlers(): array
+{
+    return [
+        'concurrencyHandler' => new ConcurrencyHandler(new AsyncExecutionHandler()),
+        'collectionHandler' => new PromiseCollectionHandler(),
+    ];
+}
 /**
  * Resets all core singletons and clears test state.
  *

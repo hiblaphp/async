@@ -2,21 +2,24 @@
 
 use Hibla\Async\Handlers\TimerHandler;
 
-describe('TimerHandler', function () {
-    beforeEach(function () {
-        $this->handler = new TimerHandler();
-    });
+function timerHandler(): TimerHandler
+{
+    return new TimerHandler();
+}
 
+describe('TimerHandler', function () {
     it('creates delay promise', function () {
-        $promise = $this->handler->delay(0.01); // 10ms
+        $handler = timerHandler();
+        $promise = $handler->delay(0.01); // 10ms
         
         expect($promise)->toBeCancellablePromise();
         expect($promise->isPending())->toBe(true);
     });
 
     it('resolves after delay', function () {
+        $handler = timerHandler();
         $start = microtime(true);
-        $promise = $this->handler->delay(0.05); // 50ms
+        $promise = $handler->delay(0.05); // 50ms
         
         $result = waitForPromise($promise);
         $elapsed = microtime(true) - $start;
@@ -26,7 +29,8 @@ describe('TimerHandler', function () {
     });
 
     it('can be cancelled', function () {
-        $promise = $this->handler->delay(0.1);
+        $handler = timerHandler();
+        $promise = $handler->delay(0.1);
         
         expect($promise->isCancelled())->toBeFalse();
         
@@ -36,8 +40,9 @@ describe('TimerHandler', function () {
     });
 
     it('handles fractional seconds', function () {
+        $handler = timerHandler();
         $start = microtime(true);
-        $promise = $this->handler->delay(0.001); // 1ms
+        $promise = $handler->delay(0.001); // 1ms
         
         waitForPromise($promise);
         $elapsed = microtime(true) - $start;

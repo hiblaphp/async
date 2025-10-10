@@ -2,24 +2,28 @@
 
 use Hibla\Async\Handlers\FiberContextHandler;
 
-describe('FiberContextHandler', function () {
-    beforeEach(function () {
-        $this->handler = new FiberContextHandler();
-    });
+function fiberContextHandler(): FiberContextHandler
+{
+    return new FiberContextHandler();
+}
 
+describe('FiberContextHandler', function () {
     it('detects when not in fiber context', function () {
-        expect($this->handler->inFiber())->toBeFalse();
+        $handler = fiberContextHandler();
+        expect($handler->inFiber())->toBeFalse();
     });
 
     it('throws exception when validating outside fiber context', function () {
-        expect(fn() => $this->handler->validateFiberContext())
+        $handler = fiberContextHandler();
+        expect(fn() => $handler->validateFiberContext())
             ->toThrow(RuntimeException::class, 'Operation can only be used inside a Fiber context');
     });
 
     it('throws exception with custom message', function () {
+        $handler = fiberContextHandler();
         $customMessage = 'Custom fiber context required';
         
-        expect(fn() => $this->handler->validateFiberContext($customMessage))
+        expect(fn() => $handler->validateFiberContext($customMessage))
             ->toThrow(RuntimeException::class, $customMessage);
     });
 

@@ -1,16 +1,12 @@
 <?php
 
 use Hibla\Async\Exceptions\AggregateErrorException;
-use Hibla\Async\Handlers\PromiseCollectionHandler;
 use Hibla\Promise\Promise;
 use Hibla\Async\Exceptions\TimeoutException;
 
 describe('PromiseCollectionHandler', function () {
-    beforeEach(function () {
-        $this->handler = new PromiseCollectionHandler();
-    });
-
     it('resolves all promises', function () {
+        $handler = promiseCollectionHandler();
         $promise1 = new Promise();
         $promise1->resolve('result1');
         
@@ -19,13 +15,14 @@ describe('PromiseCollectionHandler', function () {
         
         $promises = [$promise1, $promise2];
         
-        $promise = $this->handler->all($promises);
+        $promise = $handler->all($promises);
         $results = waitForPromise($promise);
         
         expect($results)->toBe(['result1', 'result2']);
     });
 
     it('rejects if any promise rejects', function () {
+        $handler = promiseCollectionHandler();
         $promise1 = new Promise();
         $promise1->resolve('success');
         
@@ -34,20 +31,22 @@ describe('PromiseCollectionHandler', function () {
         
         $promises = [$promise1, $promise2];
         
-        $promise = $this->handler->all($promises);
+        $promise = $handler->all($promises);
         
         expect(fn() => waitForPromise($promise))
             ->toThrow(Exception::class, 'failure');
     });
 
     it('handles empty promise array', function () {
-        $promise = $this->handler->all([]);
+        $handler = promiseCollectionHandler();
+        $promise = $handler->all([]);
         $results = waitForPromise($promise);
         
         expect($results)->toBe([]);
     });
 
     it('settles all promises', function () {
+        $handler = promiseCollectionHandler();
         $promise1 = new Promise();
         $promise1->resolve('success');
         
@@ -56,7 +55,7 @@ describe('PromiseCollectionHandler', function () {
         
         $promises = [$promise1, $promise2];
         
-        $promise = $this->handler->allSettled($promises);
+        $promise = $handler->allSettled($promises);
         $results = waitForPromise($promise);
         
         expect($results)->toHaveCount(2);
@@ -67,27 +66,30 @@ describe('PromiseCollectionHandler', function () {
     });
 
     it('races promises', function () {
+        $handler = promiseCollectionHandler();
         $fastPromise = new Promise();
         $fastPromise->resolve('fast');
         
-        $slowPromise = new Promise(); // Don't resolve this one
+        $slowPromise = new Promise();
         
-        $promise = $this->handler->race([$slowPromise, $fastPromise]);
+        $promise = $handler->race([$slowPromise, $fastPromise]);
         $result = waitForPromise($promise);
         
         expect($result)->toBe('fast');
     });
 
     it('handles timeout', function () {
-        $slowPromise = new Promise(); // Never resolves
+        $handler = promiseCollectionHandler();
+        $slowPromise = new Promise();
         
-        $promise = $this->handler->timeout($slowPromise, 0.05);
+        $promise = $handler->timeout($slowPromise, 0.05);
         
-        expect(fn() => waitForPromise($promise, 0.3))
+        expect(fn() => waitForPromise($promise))
             ->toThrow(TimeoutException::class);
     });
 
     it('resolves any promise', function () {
+        $handler = promiseCollectionHandler();
         $promise1 = new Promise();
         $promise1->reject(new Exception('fail1'));
         
@@ -99,13 +101,14 @@ describe('PromiseCollectionHandler', function () {
         
         $promises = [$promise1, $promise2, $promise3];
         
-        $promise = $this->handler->any($promises);
+        $promise = $handler->any($promises);
         $result = waitForPromise($promise);
         
         expect($result)->toBe('success');
     });
 
     it('rejects when all promises reject', function () {
+        $handler = promiseCollectionHandler();
         $promise1 = new Promise();
         $promise1->reject(new Exception('fail1'));
         
@@ -114,19 +117,20 @@ describe('PromiseCollectionHandler', function () {
         
         $promises = [$promise1, $promise2];
         
-        $promise = $this->handler->any($promises);
+        $promise = $handler->any($promises);
         
         expect(fn() => waitForPromise($promise))
             ->toThrow(AggregateErrorException::class, 'All promises were rejected');
     });
 
     it('validates timeout parameter', function () {
+        $handler = promiseCollectionHandler();
         $promise = new Promise();
         
-        expect(fn() => $this->handler->timeout($promise, 0))
+        expect(fn() => $handler->timeout($promise, 0))
             ->toThrow(InvalidArgumentException::class, 'Timeout must be greater than zero');
             
-        expect(fn() => $this->handler->timeout($promise, -1))
+        expect(fn() => $handler->timeout($promise, -1))
             ->toThrow(InvalidArgumentException::class, 'Timeout must be greater than zero');
     });
 });

@@ -3,13 +3,15 @@
 use Hibla\Async\Handlers\PromiseHandler;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
-describe('PromiseHandler', function () {
-    beforeEach(function () {
-        $this->handler = new PromiseHandler();
-    });
+function promiseHandler(): PromiseHandler
+{
+    return new PromiseHandler();
+}
 
+describe('PromiseHandler', function () {
     it('creates resolved promise', function () {
-        $promise = $this->handler->resolve('test value');
+        $handler = promiseHandler();
+        $promise = $handler->resolve('test value');
 
         expect($promise)->toBeInstanceOf(PromiseInterface::class);
         expect($promise->isResolved())->toBe(true);
@@ -17,7 +19,8 @@ describe('PromiseHandler', function () {
     });
 
     it('creates rejected promise', function () {
-        $promise = $this->handler->reject('test error');
+        $handler = promiseHandler();
+        $promise = $handler->reject('test error');
 
         expect($promise)->toBePromise();
         expect($promise->isRejected())->toBe(true);
@@ -27,13 +30,15 @@ describe('PromiseHandler', function () {
     });
 
     it('creates empty promise', function () {
-        $promise = $this->handler->createEmpty();
+        $handler = promiseHandler();
+        $promise = $handler->createEmpty();
 
         expect($promise)->toBeInstanceOf(PromiseInterface::class);
         expect($promise->isPending())->toBe(true);
     });
 
     it('resolves with different data types', function () {
+        $handler = promiseHandler();
         $testCases = [
             'string' => 'hello',
             'integer' => 42,
@@ -44,7 +49,7 @@ describe('PromiseHandler', function () {
         ];
 
         foreach (array_values($testCases) as $value) {
-            $promise = $this->handler->resolve($value);
+            $promise = $handler->resolve($value);
             expect($promise->await())->toBe($value);
         }
     });

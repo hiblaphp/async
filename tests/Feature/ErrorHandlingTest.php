@@ -3,7 +3,6 @@
 use Hibla\Async\AsyncOperations;
 use Hibla\Async\Exceptions\AggregateErrorException;
 use Hibla\Async\Exceptions\TimeoutException;
-use Hibla\EventLoop\EventLoop;
 use Hibla\Promise\Promise;
 
 beforeEach(function () {

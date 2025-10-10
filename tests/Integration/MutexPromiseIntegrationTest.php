@@ -1,6 +1,5 @@
 <?php
 
-use Hibla\Async\Mutex;
 use function Hibla\async;
 use function Hibla\await;
 use function Hibla\delay;
@@ -11,60 +10,77 @@ use function Hibla\Promise\allSettled;
 use function Hibla\Promise\batch;
 use function Hibla\Promise\timeout;
 
-beforeEach(function () {
-    $this->sharedCounter = 0;
-    $this->sharedLog = [];
-    $this->mutex = new Mutex();
-    
-    $this->protectedWork = function(string $taskName) {
-        return function() use ($taskName) {
-            $lock = await($this->mutex->acquire());
-            
-            $oldValue = $this->sharedCounter;
-            await(delay(0.02));
-            $this->sharedCounter++;
-            $this->sharedLog[] = "$taskName: $oldValue -> {$this->sharedCounter}";
-            
-            $lock->release();
-            return "$taskName completed (result: {$this->sharedCounter})";
-        };
-    };
-});
 
 describe('Promise::all() with Mutex', function () {
     it('protects shared resources across all promises', function () {
+        $mutex = mutex();
+        $sharedCounter = 0;
+        $sharedLog = [];
+        
+        $protectedWork = function(string $taskName) use ($mutex, &$sharedCounter, &$sharedLog) {
+            return function() use ($taskName, $mutex, &$sharedCounter, &$sharedLog) {
+                $lock = await($mutex->acquire());
+                
+                $oldValue = $sharedCounter;
+                await(delay(0.02));
+                $sharedCounter++;
+                $sharedLog[] = "$taskName: $oldValue -> {$sharedCounter}";
+                
+                $lock->release();
+                return "$taskName completed (result: {$sharedCounter})";
+            };
+        };
+        
         $tasks = [];
         for ($i = 1; $i <= 5; $i++) {
-            $tasks[] = async(($this->protectedWork)("Task-$i"));
+            $tasks[] = async($protectedWork("Task-$i"));
         }
 
         $results = await(all($tasks));
 
-        expect($this->sharedCounter)->toBe(5);
+        expect($sharedCounter)->toBe(5);
         expect(count($results))->toBe(5);
-        expect(count($this->sharedLog))->toBe(5);
+        expect(count($sharedLog))->toBe(5);
 
         // Verify sequential execution
         for ($i = 0; $i < 5; $i++) {
-            expect($this->sharedLog[$i])->toContain("$i -> " . ($i + 1));
+            expect($sharedLog[$i])->toContain("$i -> " . ($i + 1));
         }
     });
 });
 
 describe('Promise::race() with Mutex', function () {
     it('protects shared resources even in race conditions', function () {
+        $mutex = mutex();
+        $sharedCounter = 0;
+        $sharedLog = [];
+        
+        $protectedWork = function(string $taskName) use ($mutex, &$sharedCounter, &$sharedLog) {
+            return function() use ($taskName, $mutex, &$sharedCounter, &$sharedLog) {
+                $lock = await($mutex->acquire());
+                
+                $oldValue = $sharedCounter;
+                await(delay(0.02));
+                $sharedCounter++;
+                $sharedLog[] = "$taskName: $oldValue -> {$sharedCounter}";
+                
+                $lock->release();
+                return "$taskName completed (result: {$sharedCounter})";
+            };
+        };
+        
         $raceTasks = [
-            async(function() {
+            async(function() use ($protectedWork) {
                 await(delay(0.1));
-                return await(async(($this->protectedWork)("Slow-Task")));
+                return await(async($protectedWork("Slow-Task")));
             }),
-            async(function() {
+            async(function() use ($protectedWork) {
                 await(delay(0.05));
-                return await(async(($this->protectedWork)("Fast-Task")));
+                return await(async($protectedWork("Fast-Task")));
             }),
-            async(function() {
+            async(function() use ($protectedWork) {
                 await(delay(0.07));
-                return await(async(($this->protectedWork)("Medium-Task")));
+                return await(async($protectedWork("Medium-Task")));
             }),
         ];
 
@@ -72,58 +88,112 @@ describe('Promise::race() with Mutex', function () {
 
         expect($winner)->toContain('Fast-Task completed');
         // All tasks should still complete due to how the mutex works
-        expect($this->sharedCounter)->toBeGreaterThan(0);
-        expect(count($this->sharedLog))->toBeGreaterThan(0);
+        expect($sharedCounter)->toBeGreaterThan(0);
+        expect(count($sharedLog))->toBeGreaterThan(0);
     });
 });
 
 describe('Promise::concurrent() with Mutex', function () {
     it('limits concurrency while protecting shared resources', function () {
+        $mutex = mutex();
+        $sharedCounter = 0;
+        $sharedLog = [];
+        
+        $protectedWork = function(string $taskName) use ($mutex, &$sharedCounter, &$sharedLog) {
+            return function() use ($taskName, $mutex, &$sharedCounter, &$sharedLog) {
+                $lock = await($mutex->acquire());
+                
+                $oldValue = $sharedCounter;
+                await(delay(0.02));
+                $sharedCounter++;
+                $sharedLog[] = "$taskName: $oldValue -> {$sharedCounter}";
+                
+                $lock->release();
+                return "$taskName completed (result: {$sharedCounter})";
+            };
+        };
+        
         $tasks = [];
         for ($i = 1; $i <= 8; $i++) {
-            $tasks[] = ($this->protectedWork)("Concurrent-$i");
+            $tasks[] = $protectedWork("Concurrent-$i");
         }
 
         $results = await(concurrent($tasks, 3));
 
-        expect($this->sharedCounter)->toBe(8);
+        expect($sharedCounter)->toBe(8);
         expect(count($results))->toBe(8);
-        expect(count($this->sharedLog))->toBe(8);
+        expect(count($sharedLog))->toBe(8);
 
         // Verify sequential access despite concurrency
         for ($i = 0; $i < 8; $i++) {
-            expect($this->sharedLog[$i])->toContain("$i -> " . ($i + 1));
+            expect($sharedLog[$i])->toContain("$i -> " . ($i + 1));
         }
     });
 });
 
 describe('Promise::batch() with Mutex', function () {
     it('processes batches while protecting shared resources', function () {
+        $mutex = mutex();
+        $sharedCounter = 0;
+        $sharedLog = [];
+        
+        $protectedWork = function(string $taskName) use ($mutex, &$sharedCounter, &$sharedLog) {
+            return function() use ($taskName, $mutex, &$sharedCounter, &$sharedLog) {
+                $lock = await($mutex->acquire());
+                
+                $oldValue = $sharedCounter;
+                await(delay(0.02));
+                $sharedCounter++;
+                $sharedLog[] = "$taskName: $oldValue -> {$sharedCounter}";
+                
+                $lock->release();
+                return "$taskName completed (result: {$sharedCounter})";
+            };
+        };
+        
         $tasks = [];
         for ($i = 1; $i <= 6; $i++) {
-            $tasks[] = ($this->protectedWork)("Batch-$i");
+            $tasks[] = $protectedWork("Batch-$i");
         }
 
         $results = await(batch($tasks, 3, 2));
 
-        expect($this->sharedCounter)->toBe(6);
+        expect($sharedCounter)->toBe(6);
         expect(count($results))->toBe(6);
-        expect(count($this->sharedLog))->toBe(6);
+        expect(count($sharedLog))->toBe(6);
     });
 });
 
 describe('Promise::allSettled() with Mutex', function () {
     it('handles mixed success/failure with mutex protection', function () {
+        $mutex = mutex();
+        $sharedCounter = 0;
+        $sharedLog = [];
+        
+        $protectedWork = function(string $taskName) use ($mutex, &$sharedCounter, &$sharedLog) {
+            return function() use ($taskName, $mutex, &$sharedCounter, &$sharedLog) {
+                $lock = await($mutex->acquire());
+                
+                $oldValue = $sharedCounter;
+                await(delay(0.02));
+                $sharedCounter++;
+                $sharedLog[] = "$taskName: $oldValue -> {$sharedCounter}";
+                
+                $lock->release();
+                return "$taskName completed (result: {$sharedCounter})";
+            };
+        };
+        
         $tasks = [
-            async(($this->protectedWork)("Success-1")),
-            async(function() {
-                $lock = await($this->mutex->acquire());
-                $this->sharedCounter++;
-                $this->sharedLog[] = "Failure task: counter = {$this->sharedCounter}";
+            async($protectedWork("Success-1")),
+            async(function() use ($mutex, &$sharedCounter, &$sharedLog) {
+                $lock = await($mutex->acquire());
+                $sharedCounter++;
+                $sharedLog[] = "Failure task: counter = {$sharedCounter}";
                 $lock->release();
                 throw new Exception("Intentional failure");
             }),
-            async(($this->protectedWork)("Success-2")),
+            async($protectedWork("Success-2")),
         ];
 
         $results = await(allSettled($tasks));
@@ -132,7 +202,7 @@ describe('Promise::allSettled() with Mutex', function () {
         expect($results[0]['status'])->toBe('fulfilled');
         expect($results[1]['status'])->toBe('rejected');
         expect($results[2]['status'])->toBe('fulfilled');
-        expect($this->sharedCounter)->toBe(3);
+        expect($sharedCounter)->toBe(3);
     });
 });
 
@@ -140,8 +210,8 @@ describe('Multiple Mutexes', function () {
     it('allows independent protection of different resources', function () {
         $resource1 = 0;
         $resource2 = 0;
-        $mutex1 = new Mutex();
-        $mutex2 = new Mutex();
+        $mutex1 = mutex();
+        $mutex2 = mutex();
 
         $tasks = [];
         for ($i = 1; $i <= 3; $i++) {
@@ -171,11 +241,12 @@ describe('Multiple Mutexes', function () {
 
 describe('Timeout with Mutex', function () {
     it('handles timeouts properly with mutex operations', function () {
+        $mutex = mutex();
         $timeoutCounter = 0;
 
-        expect(function() use (&$timeoutCounter) {
-            $timeoutTask = async(function() use (&$timeoutCounter) {
-                $lock = await($this->mutex->acquire());
+        expect(function() use ($mutex, &$timeoutCounter) {
+            $timeoutTask = async(function() use ($mutex, &$timeoutCounter) {
+                $lock = await($mutex->acquire());
                 await(delay(1.0)); // Long operation
                 $timeoutCounter++;
                 $lock->release();

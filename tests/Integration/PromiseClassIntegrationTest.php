@@ -5,6 +5,9 @@ use Hibla\Async\Exceptions\TimeoutException;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
+use function Hibla\await;
+use function Hibla\delay;
+
 beforeEach(function () {
     resetEventLoop();
 });

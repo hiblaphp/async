@@ -4,29 +4,30 @@ use Hibla\Async\Handlers\AsyncExecutionHandler;
 use Hibla\Async\Handlers\AwaitHandler;
 use Hibla\Async\Handlers\FiberContextHandler;
 use Hibla\EventLoop\Loop;
-use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
-use PHPUnit\Event\Event;
+
+
+function awaitHandler(): AwaitHandler
+{
+    return new AwaitHandler(new FiberContextHandler());
+}
 
 describe('AwaitHandler', function () {
-    beforeEach(function () {
-        $this->contextHandler = new FiberContextHandler();
-        $this->awaitHandler = new AwaitHandler($this->contextHandler);
-    });
-
     it('awaits resolved promise outside fiber context', function () {
+        $handler = awaitHandler();
         $promise = new Promise();
         $promise->resolve('test value');
 
-        $result = $this->awaitHandler->await($promise);
+        $result = $handler->await($promise);
         expect($result)->toBe('test value');
     });
 
     it('awaits rejected promise outside fiber context', function () {
+        $handler = awaitHandler();
         $promise = new Promise();
         $promise->reject(new Exception('test error'));
 
-        expect(fn() => $this->awaitHandler->await($promise))
+        expect(fn() => $handler->await($promise))
             ->toThrow(Exception::class, 'test error');
     });
 
@@ -38,7 +39,6 @@ describe('AwaitHandler', function () {
             $awaitHandler = new AwaitHandler($contextHandler);
 
             $promise = new Promise();
-
             $promise->resolve('fiber result');
 
             return $awaitHandler->await($promise);
@@ -52,14 +52,16 @@ describe('AwaitHandler', function () {
     });
 
     it('handles string rejection reasons', function () {
+        $handler = awaitHandler();
         $promise = new Promise();
         $promise->reject('string error');
 
-        expect(fn() => $this->awaitHandler->await($promise))
+        expect(fn() => $handler->await($promise))
             ->toThrow(Exception::class, 'string error');
     });
 
     it('handles object rejection reasons with toString', function () {
+        $handler = awaitHandler();
         $errorObj = new class {
             public function __toString(): string
             {
@@ -70,7 +72,7 @@ describe('AwaitHandler', function () {
         $promise = new Promise();
         $promise->reject($errorObj);
 
-        expect(fn() => $this->awaitHandler->await($promise))
+        expect(fn() => $handler->await($promise))
             ->toThrow(Exception::class, 'object error');
     });
 });

@@ -1,15 +1,16 @@
 <?php
 
 use Hibla\Async\Handlers\AsyncExecutionHandler;
-use Hibla\Promise\Interfaces\PromiseInterface;
+
+function asyncExecutionHandler(): AsyncExecutionHandler
+{
+    return new AsyncExecutionHandler();
+}
 
 describe('AsyncExecutionHandler', function () {
-    beforeEach(function () {
-        $this->handler = new AsyncExecutionHandler();
-    });
-
     it('converts a regular function to async function', function () {
-        $asyncFunc = $this->handler->async(fn() => 'test result');
+        $handler = asyncExecutionHandler();
+        $asyncFunc = $handler->async(fn() => 'test result');
         
         expect($asyncFunc)->toBeCallable();
         
@@ -21,7 +22,8 @@ describe('AsyncExecutionHandler', function () {
     });
 
     it('handles function with arguments', function () {
-        $asyncFunc = $this->handler->async(fn($a, $b) => $a + $b);
+        $handler = asyncExecutionHandler();
+        $asyncFunc = $handler->async(fn($a, $b) => $a + $b);
         
         $promise = $asyncFunc(5, 3);
         $result = waitForPromise($promise);
@@ -30,7 +32,8 @@ describe('AsyncExecutionHandler', function () {
     });
 
     it('handles exceptions in async functions', function () {
-        $asyncFunc = $this->handler->async(function () {
+        $handler = asyncExecutionHandler();
+        $asyncFunc = $handler->async(function () {
             throw new Exception('Test exception');
         });
         
@@ -41,7 +44,8 @@ describe('AsyncExecutionHandler', function () {
     });
 
     it('preserves function return types', function () {
-        $asyncFunc = $this->handler->async(fn() => ['key' => 'value']);
+        $handler = asyncExecutionHandler();
+        $asyncFunc = $handler->async(fn() => ['key' => 'value']);
         
         $promise = $asyncFunc();
         $result = waitForPromise($promise);
@@ -50,7 +54,8 @@ describe('AsyncExecutionHandler', function () {
     });
 
     it('handles null return values', function () {
-        $asyncFunc = $this->handler->async(fn() => null);
+        $handler = asyncExecutionHandler();
+        $asyncFunc = $handler->async(fn() => null);
         
         $promise = $asyncFunc();
         $result = waitForPromise($promise);
