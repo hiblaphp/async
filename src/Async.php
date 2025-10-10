@@ -80,10 +80,26 @@ final class Async
     /**
      * Suspends the current fiber until the promise is fulfilled or rejected.
      *
-     * This method is the heart of the await pattern. It pauses the fiber's
-     * execution, allowing the event loop to run other tasks. When the promise
-     * settles, the fiber is resumed.
+     * **Context-Aware Behavior:**
+     * - Inside fiber context: Suspends the fiber, yielding control to the event loop
+     * - Outside fiber context: Blocks execution using EventLoop until promise settles
      *
+     * This method is the heart of the await pattern. When in a fiber, it pauses
+     * execution without blocking, allowing other tasks to run. When outside a fiber,
+     * it automatically falls back to blocking mode for convenience.
+     *
+     * ```php
+     * // Inside async context - suspends fiber (non-blocking)
+     * async(function() {
+     *     $user = await($getUserPromise);
+     *     $posts = await($getPostsPromise);
+     *     return compact('user', 'posts');
+     * });
+     *
+     * // Outside async context - blocks until resolved
+     * $result = await($promise);
+     * ```
+     * 
      * @template TValue The expected type of the resolved value from the promise.
      *
      * @param  PromiseInterface<TValue>  $promise  The promise to await.

@@ -49,16 +49,33 @@ if (! function_exists('await')) {
     /**
      * Suspends the current fiber until the promise is fulfilled or rejected.
      *
-     * This method is the heart of the await pattern. It pauses the fiber's
-     * execution, allowing the event loop to run other tasks. When the promise
-     * settles, the fiber is resumed.
+     * **Context-Aware Behavior:**
+     * - Inside fiber context (e.g., within async()): Suspends the fiber without blocking
+     * - Outside fiber context: Blocks execution using EventLoop until promise settles
      *
+     * This is the primary method for awaiting promises in async code. When called
+     * inside a fiber, it yields control to the event loop, allowing other tasks to run.
+     * When called outside a fiber, it falls back to blocking mode for convenience.
+     *
+     *  
+     * ```php
+     * // Inside async context - suspends fiber (non-blocking)
+     * async(function() {
+     *     $user = await($getUserPromise);
+     *     $posts = await($getPostsPromise);
+     *     return compact('user', 'posts');
+     * });
+     *
+     * // Outside async context - blocks until resolved
+     * $result = await($promise);
+     * ```
+     * 
      * @template TValue The expected type of the resolved value from the promise.
      *
      * @param  PromiseInterface<TValue>  $promise  The promise to await.
      * @return TValue The resolved value of the promise.
      *
-     * @throws Exception If the promise is rejected, this method throws the rejection reason.
+     * @throws \Exception If the promise is rejected, this method throws the rejection reason.
      */
     function await(PromiseInterface $promise): mixed
     {

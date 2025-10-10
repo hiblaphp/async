@@ -51,17 +51,34 @@ interface AsyncOperationsInterface
     public function async(callable $asyncFunction): callable;
 
     /**
-     * Suspends execution until the promise is resolved or rejected.
+     * Suspends the current fiber until the promise is fulfilled or rejected.
      *
-     * This method should only be called within a fiber context.
-     * It will yield control back to the event loop until the promise settles.
+     * **Context-Aware Behavior:**
+     * - Inside fiber context: Suspends the fiber, yielding control to the event loop
+     * - Outside fiber context: Blocks execution using EventLoop until promise settles
      *
-     * @template TValue
+     * This method is the heart of the await pattern. When in a fiber, it pauses
+     * execution without blocking, allowing other tasks to run. When outside a fiber,
+     * it automatically falls back to blocking mode for convenience.
+     *
+     * ```php
+     * // Inside async context - suspends fiber (non-blocking)
+     * async(function() {
+     *     $user = await($getUserPromise);
+     *     $posts = await($getPostsPromise);
+     *     return compact('user', 'posts');
+     * });
+     *
+     * // Outside async context - blocks until resolved
+     * $result = await($promise);
+     * ```
+     * 
+     * @template TValue The expected type of the resolved value from the promise.
      *
      * @param  PromiseInterface<TValue>  $promise  The promise to await.
      * @return TValue The resolved value of the promise.
      *
-     * @throws Throwable The rejection reason if the promise is rejected.
+     * @throws \Exception If the promise is rejected, this method throws the rejection reason.
      */
     public function await(PromiseInterface $promise): mixed;
 
