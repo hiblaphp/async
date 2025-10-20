@@ -117,11 +117,10 @@ class AsyncOperations implements AsyncOperationsInterface
     /**
      * Convert a regular function into an async function.
      *
-     * The returned function will execute the original function within
-     * a fiber context, allowing it to use async operations.
+     * @template TReturn The return type of the async function
      *
-     * @param  callable  $asyncFunction  The function to convert to async
-     * @return callable(): PromiseInterface<mixed> An async version of the provided function
+     * @param  callable(): TReturn  $asyncFunction  The function to convert to async
+     * @return callable(): PromiseInterface<TReturn> An async version of the provided function
      */
     public function async(callable $asyncFunction): callable
     {

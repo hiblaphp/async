@@ -10,9 +10,6 @@ use Hibla\Promise\Interfaces\PromiseInterface;
 /**
  * Check if the current execution context is within a PHP Fiber.
  *
- * This is essential for determining if async operations can be performed
- * safely or if they need to be wrapped in a fiber context first.
- *
  * @return bool True if executing within a fiber, false otherwise
  */
 function in_fiber(): bool
@@ -23,38 +20,33 @@ function in_fiber(): bool
 /**
  * Convert a regular function into an async function that returns a Promise.
  *
- * The returned function will execute the original function within a fiber
- * context, enabling it to use async operations like await. This is the
- * primary method for creating async functions from synchronous code.
+ * @template TReturn The return type of the async function
+ * 
+ * @param  callable(): TReturn  $asyncFunction  The function to convert to async
+ * @return PromiseInterface<TReturn> A promise that resolves to the return value
  *
- * @param  callable  $asyncFunction  The function to convert to async
- * @return PromiseInterface<mixed> An async version that returns a Promise
- *
- * - $asyncFunc = async(function($data) {
+ * @example
+ * $promise = async(function() {
  *     $result = await(http_get('https://api.example.com'));
  *     return $result;
  * });
  */
 function async(callable $asyncFunction): PromiseInterface
 {
-    /** @var PromiseInterface<mixed> $result */
-    $result = Async::async($asyncFunction)();
-
-    return $result;
+    return Async::async($asyncFunction)();
 }
 
 /**
  * Suspends the current fiber until the promise is fulfilled or rejected.
  *
  * **Context-Aware Behavior:**
- * - Inside fiber context (e.g., within async()): Suspends the fiber without blocking
+ * - Inside fiber context: Suspends the fiber, yielding control to the event loop
  * - Outside fiber context: Blocks execution using EventLoop until promise settles
  *
- * This is the primary method for awaiting promises in async code. When called
- * inside a fiber, it yields control to the event loop, allowing other tasks to run.
- * When called outside a fiber, it falls back to blocking mode for convenience.
+ * This method is the heart of the await pattern. When in a fiber, it pauses
+ * execution without blocking, allowing other tasks to run. When outside a fiber,
+ * it automatically falls back to blocking mode for convenience.
  *
- *  
  * ```php
  * // Inside async context - suspends fiber (non-blocking)
  * async(function() {
@@ -66,7 +58,6 @@ function async(callable $asyncFunction): PromiseInterface
  * // Outside async context - blocks until resolved
  * $result = await($promise);
  * ```
- * 
  * @template TValue The expected type of the resolved value from the promise.
  *
  * @param  PromiseInterface<TValue>  $promise  The promise to await.
@@ -82,15 +73,8 @@ function await(PromiseInterface $promise): mixed
 /**
  * Create a promise that resolves after a specified time delay.
  *
- * This creates a timer-based promise that will resolve with null after
- * the specified delay. Useful for creating pauses in async execution
- * without blocking the event loop.
- *
  * @param  float  $seconds  Number of seconds to delay
  * @return CancellablePromiseInterface<null> A promise that resolves after the delay
- *
- * @example
- * await(delay(2.5)); // Wait 2.5 seconds
  */
 function delay(float $seconds): CancellablePromiseInterface
 {
@@ -99,10 +83,6 @@ function delay(float $seconds): CancellablePromiseInterface
 
 /**
  * Pause execution for a specified duration.
- *
- * This method blocks the current fiber's execution for the given number
- * of seconds. It's useful for creating synchronous delays in async code
- * without blocking the event loop.
  *
  * @param  float  $seconds  Number of seconds to sleep (supports fractional seconds)
  * @return null Always returns null after the sleep duration

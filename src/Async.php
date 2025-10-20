@@ -20,7 +20,6 @@ final class Async
     /**
      * @var AsyncOperations|null Cached instance of core async operations handler
      */
-
     private static ?AsyncOperations $asyncOps = null;
 
     /**
@@ -69,8 +68,10 @@ final class Async
      * context, enabling it to use async operations like await. This is the
      * primary method for creating async functions from synchronous code.
      *
-     * @param  callable  $asyncFunction  The function to convert to async
-     * @return callable An async version that returns a Promise
+     * @template TReturn The return type of the async function
+     *
+     * @param  callable(): TReturn  $asyncFunction  The function to convert to async
+     * @return callable(): PromiseInterface<TReturn> An async version that returns a Promise
      */
     public static function async(callable $asyncFunction): callable
     {

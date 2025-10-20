@@ -23,11 +23,14 @@ final readonly class AsyncExecutionHandler
      * The returned function, when called, will execute the original function
      * inside a Fiber and return a Promise that resolves with the result.
      *
-     * @param  callable  $asyncFunction  The function to make asynchronous.
-     * @return callable(): PromiseInterface<mixed> A function that returns a Promise when called.
+     * @template TReturn The return type of the async function
+     *
+     * @param  callable(): TReturn  $asyncFunction  The function to make asynchronous.
+     * @return callable(): PromiseInterface<TReturn> A function that returns a Promise when called.
      */
     public function async(callable $asyncFunction): callable
     {
+        /** @phpstan-ignore-next-line - Closure generic type cannot be inferred through Promise constructor */
         return function (...$args) use ($asyncFunction): PromiseInterface {
             return new Promise(function (callable $resolve, callable $reject) use ($asyncFunction, $args) {
                 $fiber = new Fiber(function () use ($asyncFunction, $args, $resolve, $reject): void {
