@@ -45,8 +45,9 @@ interface AsyncOperationsInterface
      * The returned callable will execute the original function within a fiber
      * and return a promise that resolves with the function's result.
      *
-     * @param  callable  $asyncFunction  The function to wrap asynchronously.
-     * @return callable(): PromiseInterface<mixed> A callable that returns a PromiseInterface.
+     * @template TReturn
+     * @param  callable(): TReturn  $asyncFunction  The function to wrap asynchronously.
+     * @return callable(): PromiseInterface<TReturn> A callable that returns a PromiseInterface.
      */
     public function async(callable $asyncFunction): callable;
 
@@ -96,8 +97,9 @@ interface AsyncOperationsInterface
      * Returns a promise that resolves with an array of all resolved values
      * in the same order as the input promises, or rejects with the first rejection.
      *
-     * @param  array<PromiseInterface<mixed>>  $promises  Array of PromiseInterface instances.
-     * @return PromiseInterface<array<mixed>> A promise that resolves with an array of results.
+     * @template TAllValue
+     * @param  array<int|string, PromiseInterface<TAllValue>|callable(): PromiseInterface<TAllValue>>  $promises  Array of PromiseInterface instances.
+     * @return PromiseInterface<array<int|string, TAllValue>> A promise that resolves with an array of results.
      */
     public function all(array $promises): PromiseInterface;
 
@@ -108,8 +110,9 @@ interface AsyncOperationsInterface
      * all results, including both successful values and rejection reasons.
      * This method never rejects - it always resolves with an array of settlement results.
      *
-     * @param  array<int|string, callable(): PromiseInterface<mixed>|PromiseInterface<mixed>>  $promises
-     * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: mixed, reason?: mixed}>>
+     * @template TAllSettledValue
+     * @param  array<int|string, PromiseInterface<TAllSettledValue>|callable(): PromiseInterface<TAllSettledValue>>  $promises
+     * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: TAllSettledValue, reason?: mixed}>>
      */
     public function allSettled(array $promises): PromiseInterface;
 
@@ -119,17 +122,31 @@ interface AsyncOperationsInterface
      * The returned promise will resolve or reject with the value/reason
      * of whichever input promise settles first.
      *
-     * @param  array<PromiseInterface<mixed>>  $promises  Array of PromiseInterface instances.
-     * @return PromiseInterface<mixed> A promise that settles with the first settled promise.
+     * @template TRaceValue
+     * @param  array<int|string, PromiseInterface<TRaceValue>|callable(): PromiseInterface<TRaceValue>>  $promises  Array of PromiseInterface instances.
+     * @return PromiseInterface<TRaceValue> A promise that settles with the first settled promise.
      */
     public function race(array $promises): PromiseInterface;
 
     /**
+     * Wait for any promise in the collection to resolve.
+     *
+     * Returns a promise that resolves with the value of the first
+     * promise that resolves, or rejects if all promises reject.
+     *
+     * @template TAnyValue
+     * @param  array<int|string, PromiseInterface<TAnyValue>|callable(): PromiseInterface<TAnyValue>>  $promises  Array of promises to wait for
+     * @return PromiseInterface<TAnyValue> A promise that resolves with the first settled value
+     */
+    public function any(array $promises): PromiseInterface;
+
+    /**
      * Add a timeout to a promise operation.
      *
-     * @param  PromiseInterface<mixed>  $promise  The promise to add timeout to
+     * @template TTimeoutValue
+     * @param  PromiseInterface<TTimeoutValue>  $promise  The promise to add timeout to
      * @param  float  $seconds  Timeout duration in seconds
-     * @return PromiseInterface<mixed>
+     * @return PromiseInterface<TTimeoutValue>
      */
     public function timeout(PromiseInterface $promise, float $seconds): PromiseInterface;
 
@@ -139,9 +156,10 @@ interface AsyncOperationsInterface
      * Limits the number of simultaneously executing tasks while ensuring
      * all tasks eventually complete.
      *
-     * @param  array<callable(): PromiseInterface<mixed>>  $tasks  Array of callable tasks that return promises.
+     * @template TConcurrentValue
+     * @param  array<int|string, callable(): (TConcurrentValue|PromiseInterface<TConcurrentValue>)>  $tasks  Array of callable tasks that return promises or values.
      * @param  int  $concurrency  Maximum number of concurrent executions (default: 10).
-     * @return PromiseInterface<array<mixed>> A promise that resolves with an array of all results when all tasks complete.
+     * @return PromiseInterface<array<int|string, TConcurrentValue>> A promise that resolves with an array of all results when all tasks complete.
      */
     public function concurrent(array $tasks, int $concurrency = 10): PromiseInterface;
 
@@ -151,10 +169,38 @@ interface AsyncOperationsInterface
      * This method processes tasks in smaller batches, allowing for
      * controlled concurrency and resource management.
      *
-     * @param  array<callable(): PromiseInterface<mixed>>  $tasks  Array of tasks (callables that return promises) to execute.
+     * @template TBatchValue
+     * @param  array<int|string, callable(): (TBatchValue|PromiseInterface<TBatchValue>)>  $tasks  Array of tasks (callables that return promises or values) to execute.
      * @param  int  $batchSize  Size of each batch to process concurrently.
      * @param  int|null  $concurrency  Maximum number of concurrent executions per batch.
-     * @return PromiseInterface<array<mixed>> A promise that resolves with all results.
+     * @return PromiseInterface<array<int|string, TBatchValue>> A promise that resolves with all results.
      */
     public function batch(array $tasks, int $batchSize = 10, ?int $concurrency = null): PromiseInterface;
+
+    /**
+     * Execute multiple tasks concurrently with a specified concurrency limit and wait for all to settle.
+     *
+     * Similar to concurrent(), but waits for all tasks to complete and returns settlement results.
+     * This method never rejects - it always resolves with an array of settlement results.
+     *
+     * @template TConcurrentSettledValue
+     * @param  array<int|string, callable(): (TConcurrentSettledValue|PromiseInterface<TConcurrentSettledValue>)>  $tasks  Array of tasks (callables) to execute
+     * @param  int  $concurrency  Maximum number of concurrent executions
+     * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: TConcurrentSettledValue, reason?: mixed}>> A promise that resolves with settlement results
+     */
+    public function concurrentSettled(array $tasks, int $concurrency = 10): PromiseInterface;
+
+    /**
+     * Execute multiple tasks in batches with a concurrency limit and wait for all to settle.
+     *
+     * Similar to batch(), but waits for all tasks to complete and returns settlement results.
+     * This method never rejects - it always resolves with an array of settlement results.
+     *
+     * @template TBatchSettledValue
+     * @param  array<int|string, callable(): (TBatchSettledValue|PromiseInterface<TBatchSettledValue>)>  $tasks  Array of tasks (callables) to execute
+     * @param  int  $batchSize  Size of each batch to process concurrently
+     * @param  int|null  $concurrency  Maximum number of concurrent executions per batch
+     * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: TBatchSettledValue, reason?: mixed}>> A promise that resolves with settlement results
+     */
+    public function batchSettled(array $tasks, int $batchSize = 10, ?int $concurrency = null): PromiseInterface;
 }

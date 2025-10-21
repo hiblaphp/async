@@ -37,15 +37,16 @@ final readonly class ConcurrencyHandler
      * callable functions or existing Promise instances. Promise instances will be
      * automatically wrapped to ensure proper concurrency control.
      *
-     * @param  array<int|string, callable(): mixed|PromiseInterface<mixed>>  $tasks  Array of callable tasks or Promise instances
-     * @param  int  $concurrency  Maximum number of tasks to run simultaneously (default: 10)
-     * @return PromiseInterface<array<int|string, mixed>> Promise that resolves with an array of all results
+     * @template TConcurrentValue
+     * @param  array<int|string, callable(): (TConcurrentValue|PromiseInterface<TConcurrentValue>)>  $tasks  Array of callable tasks that return promises or values.
+     * @param  int  $concurrency  Maximum number of concurrent executions (default: 10).
+     * @return PromiseInterface<array<int|string, TConcurrentValue>> A promise that resolves with an array of all results when all tasks complete.
      *
      * @throws RuntimeException If a task doesn't return a Promise
      */
     public function concurrent(array $tasks, int $concurrency = 10): PromiseInterface
     {
-        /** @var Promise<array<int|string, mixed>> */
+        /** @var Promise<array<int|string, TConcurrentValue>> */
         return new Promise(function (callable $resolve, callable $reject) use ($tasks, $concurrency): void {
             if ($concurrency <= 0) {
                 $reject(new \InvalidArgumentException('Concurrency limit must be greater than 0'));
@@ -162,14 +163,15 @@ final readonly class ConcurrencyHandler
      * entire batch to complete before starting the next batch. Promise instances
      * will be automatically wrapped to ensure proper concurrency control.
      *
-     * @param  array<int|string, callable(): mixed|PromiseInterface<mixed>>  $tasks  Array of callable tasks or Promise instances
-     * @param  int  $batchSize  Number of tasks per batch (default: 10)
-     * @param  int|null  $concurrency  Maximum concurrent tasks within each batch (default: same as batch size)
-     * @return PromiseInterface<array<int|string, mixed>> Promise that resolves with an array of all results
+     * @template TBatchValue
+     * @param  array<int|string, callable(): (TBatchValue|PromiseInterface<TBatchValue>)>  $tasks  Array of tasks (callables that return promises or values) to execute.
+     * @param  int  $batchSize  Size of each batch to process concurrently.
+     * @param  int|null  $concurrency  Maximum number of concurrent executions per batch.
+     * @return PromiseInterface<array<int|string, TBatchValue>> A promise that resolves with all results.
      */
     public function batch(array $tasks, int $batchSize = 10, ?int $concurrency = null): PromiseInterface
     {
-        /** @var Promise<array<int|string, mixed>> */
+        /** @var Promise<array<int|string, TBatchValue>> */
         return new Promise(function (callable $resolve, callable $reject) use ($tasks, $batchSize, $concurrency): void {
             if ($batchSize <= 0) {
                 $reject(new \InvalidArgumentException('Batch size must be greater than 0'));
@@ -271,13 +273,14 @@ final readonly class ConcurrencyHandler
      * and returns settlement results for all tasks. This method never rejects - it always
      * resolves with an array of settlement results.
      *
-     * @param  array<int|string, callable(): mixed|PromiseInterface<mixed>>  $tasks  Array of callable tasks or Promise instances
-     * @param  int  $concurrency  Maximum number of tasks to run simultaneously (default: 10)
-     * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: mixed, reason?: mixed}>> Promise that resolves with settlement results
+     * @template TConcurrentSettledValue
+     * @param  array<int|string, callable(): (TConcurrentSettledValue|PromiseInterface<TConcurrentSettledValue>)>  $tasks  Array of tasks (callables) to execute
+     * @param  int  $concurrency  Maximum number of concurrent executions
+     * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: TConcurrentSettledValue, reason?: mixed}>> A promise that resolves with settlement results
      */
     public function concurrentSettled(array $tasks, int $concurrency = 10): PromiseInterface
     {
-        /** @var Promise<array<int|string, array{status: 'fulfilled'|'rejected', value?: mixed, reason?: mixed}>> */
+        /** @var Promise<array<int|string, array{status: 'fulfilled'|'rejected', value?: TConcurrentSettledValue, reason?: mixed}>> */
         return new Promise(function (callable $resolve, callable $reject) use ($tasks, $concurrency): void {
             if ($concurrency <= 0) {
                 $reject(new \InvalidArgumentException('Concurrency limit must be greater than 0'));
@@ -439,14 +442,15 @@ final readonly class ConcurrencyHandler
      * and returns settlement results for all tasks. This method never rejects - it always
      * resolves with an array of settlement results.
      *
-     * @param  array<int|string, callable(): mixed|PromiseInterface<mixed>>  $tasks  Array of callable tasks or Promise instances
-     * @param  int  $batchSize  Number of tasks per batch (default: 10)
-     * @param  int|null  $concurrency  Maximum concurrent tasks within each batch (default: same as batch size)
-     * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: mixed, reason?: mixed}>> Promise that resolves with settlement results
+     * @template TBatchSettledValue
+     * @param  array<int|string, callable(): (TBatchSettledValue|PromiseInterface<TBatchSettledValue>)>  $tasks  Array of tasks (callables) to execute
+     * @param  int  $batchSize  Size of each batch to process concurrently
+     * @param  int|null  $concurrency  Maximum number of concurrent executions per batch
+     * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: TBatchSettledValue, reason?: mixed}>> A promise that resolves with settlement results
      */
     public function batchSettled(array $tasks, int $batchSize = 10, ?int $concurrency = null): PromiseInterface
     {
-        /** @var Promise<array<int|string, array{status: 'fulfilled'|'rejected', value?: mixed, reason?: mixed}>> */
+        /** @var Promise<array<int|string, array{status: 'fulfilled'|'rejected', value?: TBatchSettledValue, reason?: mixed}>> */
         return new Promise(function (callable $resolve, callable $reject) use ($tasks, $batchSize, $concurrency): void {
             if ($batchSize <= 0) {
                 $reject(new \InvalidArgumentException('Batch size must be greater than 0'));
@@ -486,7 +490,7 @@ final readonly class ConcurrencyHandler
             foreach ($originalKeys as $key) {
                 $allResults[$key] = null;
             }
-            
+
             $batchIndex = 0;
             $totalBatches = count($batches);
 

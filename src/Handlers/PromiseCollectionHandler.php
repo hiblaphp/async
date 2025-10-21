@@ -29,12 +29,13 @@ final readonly class PromiseCollectionHandler
     /**
      * Run multiple Promises in parallel and return a Promise that resolves when all Promises are settled.
      *
-     * @param  array<int|string, callable(): PromiseInterface<mixed>|PromiseInterface<mixed>>  $promises
-     * @return PromiseInterface<array<int|string, mixed>>
+     * @template TAllValue
+     * @param  array<int|string, PromiseInterface<TAllValue>|callable(): PromiseInterface<TAllValue>>  $promises  Array of PromiseInterface instances.
+     * @return PromiseInterface<array<int|string, TAllValue>> A promise that resolves with an array of results.
      */
     public function all(array $promises): PromiseInterface
     {
-        /** @var Promise<array<int|string, mixed>> */
+        /** @var Promise<array<int|string, TAllValue>> */
         return new Promise(function (callable $resolve, callable $reject) use ($promises): void {
             if ($promises === []) {
                 $resolve([]);
@@ -113,12 +114,13 @@ final readonly class PromiseCollectionHandler
      * all results, including both successful values and rejection reasons.
      * This method never rejects - it always resolves with an array of settlement results.
      *
-     * @param  array<int|string, callable(): PromiseInterface<mixed>|PromiseInterface<mixed>>  $promises
-     * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: mixed, reason?: mixed}>>
+     * @template TAllSettledValue
+     * @param  array<int|string, PromiseInterface<TAllSettledValue>|callable(): PromiseInterface<TAllSettledValue>>  $promises
+     * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: TAllSettledValue, reason?: mixed}>>
      */
     public function allSettled(array $promises): PromiseInterface
     {
-        /** @var Promise<array<int|string, array{status: 'fulfilled'|'rejected', value?: mixed, reason?: mixed}>> */
+        /** @var Promise<array<int|string, array{status: 'fulfilled'|'rejected', value?: TAllSettledValue, reason?: mixed}>> */
         return new Promise(function (callable $resolve) use ($promises): void {
             if ($promises === []) {
                 $resolve([]);
@@ -233,8 +235,9 @@ final readonly class PromiseCollectionHandler
     /**
      * Race multiple Promises and return the first to settle.
      *
-     * @param  array<int|string, callable(): PromiseInterface<mixed>|PromiseInterface<mixed>>  $promises
-     * @return CancellablePromiseInterface<mixed>
+     * @template TRaceValue
+     * @param  array<int|string, PromiseInterface<TRaceValue>|callable(): PromiseInterface<TRaceValue>>  $promises  Array of PromiseInterface instances.
+     * @return CancellablePromiseInterface<TRaceValue> A promise that settles with the first settled promise.
      */
     public function race(array $promises): CancellablePromiseInterface
     {
@@ -242,56 +245,62 @@ final readonly class PromiseCollectionHandler
         $promiseInstances = [];
         $settled = false;
 
-        $cancellablePromise = new CancellablePromise(function (callable $resolve, callable $reject) use ($promises, &$promiseInstances, &$settled): void {
-            if ($promises === []) {
-                $reject(new InvalidArgumentException('Cannot race with no promises provided'));
-                return;
-            }
-
-            foreach ($promises as $index => $item) {
-                try {
-                    if (is_callable($item)) {
-                        $promise = $item();
-
-                        if (! ($promise instanceof PromiseInterface)) {
-                            $promise = $this->executionHandler->async($item)();
-                        }
-                    } else {
-                        $promise = $item;
-                    }
-
-                    if (! ($promise instanceof PromiseInterface)) {
-                        throw new RuntimeException('Item must return a Promise or be a callable that returns a Promise');
-                    }
-
-                    $promiseInstances[$index] = $promise;
-                } catch (Throwable $e) {
-                    foreach ($promiseInstances as $p) {
-                        $this->cancelPromiseIfPossible($p);
-                    }
-                    $reject($e);
+        /**
+         * @var CancellablePromise<TRaceValue> $cancellablePromise
+         */
+        $cancellablePromise = new CancellablePromise(
+            /** @param callable(TRaceValue): void $resolve */
+            function (callable $resolve, callable $reject) use ($promises, &$promiseInstances, &$settled): void {
+                if ($promises === []) {
+                    $reject(new InvalidArgumentException('Cannot race with no promises provided'));
                     return;
                 }
 
-                $promise
-                    ->then(function ($value) use ($resolve, &$settled, &$promiseInstances, $index): void {
-                        if ($settled) {
-                            return;
+                foreach ($promises as $index => $item) {
+                    try {
+                        if (is_callable($item)) {
+                            $promise = $item();
+
+                            if (! ($promise instanceof PromiseInterface)) {
+                                $promise = $this->executionHandler->async($item)();
+                            }
+                        } else {
+                            $promise = $item;
                         }
 
-                        $this->handleRaceSettlement($settled, $promiseInstances, $index);
-                        $resolve($value);
-                    })
-                    ->catch(function ($reason) use ($reject, &$settled, &$promiseInstances, $index): void {
-                        if ($settled) {
-                            return;
+                        if (! ($promise instanceof PromiseInterface)) {
+                            throw new RuntimeException('Item must return a Promise or be a callable that returns a Promise');
                         }
 
-                        $this->handleRaceSettlement($settled, $promiseInstances, $index);
-                        $reject($reason);
-                    });
+                        $promiseInstances[$index] = $promise;
+                    } catch (Throwable $e) {
+                        foreach ($promiseInstances as $p) {
+                            $this->cancelPromiseIfPossible($p);
+                        }
+                        $reject($e);
+                        return;
+                    }
+
+                    $promise
+                        ->then(function ($value) use ($resolve, &$settled, &$promiseInstances, $index): void {
+                            if ($settled) {
+                                return;
+                            }
+
+                            $this->handleRaceSettlement($settled, $promiseInstances, $index);
+                            $resolve($value);
+                        })
+                        ->catch(function ($reason) use ($reject, &$settled, &$promiseInstances, $index): void {
+                            if ($settled) {
+                                return;
+                            }
+
+                            $this->handleRaceSettlement($settled, $promiseInstances, $index);
+                            $reject($reason);
+                        });
+                }
             }
-        });
+        );
 
         $cancellablePromise->setCancelHandler(function () use (&$promiseInstances, &$settled): void {
             $settled = true;
@@ -306,9 +315,10 @@ final readonly class PromiseCollectionHandler
     /**
      * Add a timeout to a promise operation.
      *
-     * @param  PromiseInterface<mixed>  $promise  The promise to add timeout to
+     * @template TTimeoutValue
+     * @param  PromiseInterface<TTimeoutValue>  $promise  The promise to add timeout to
      * @param  float  $seconds  Timeout duration in seconds
-     * @return CancellablePromiseInterface<mixed>
+     * @return CancellablePromiseInterface<TTimeoutValue>
      */
     public function timeout(PromiseInterface $promise, float $seconds): CancellablePromiseInterface
     {
@@ -324,10 +334,14 @@ final readonly class PromiseCollectionHandler
     }
 
     /**
-     * Wait for any Promise in a collection to resolve.
+     * Wait for any promise in the collection to resolve.
      *
-     * @param  array<int|string, callable(): PromiseInterface<mixed>|PromiseInterface<mixed>>  $promises
-     * @return CancellablePromiseInterface<mixed>
+     * Returns a promise that resolves with the value of the first
+     * promise that resolves, or rejects if all promises reject.
+     *
+     * @template TAnyValue
+     * @param  array<int|string, PromiseInterface<TAnyValue>|callable(): PromiseInterface<TAnyValue>>  $promises  Array of promises to wait for
+     * @return CancellablePromiseInterface<TAnyValue> A promise that resolves with the first settled value
      */
     public function any(array $promises): CancellablePromiseInterface
     {
@@ -335,6 +349,7 @@ final readonly class PromiseCollectionHandler
         $promiseInstances = [];
         $settled = false;
 
+        /** @var CancellablePromise<TAnyValue> $cancellablePromise */
         $cancellablePromise = new CancellablePromise(
             function (callable $resolve, callable $reject) use ($promises, &$promiseInstances, &$settled): void {
                 if ($promises === []) {
