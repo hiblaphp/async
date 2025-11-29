@@ -9,9 +9,9 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
             $tasks = [
-                fn() => delayedValue('first', 30),
-                fn() => delayedValue('second', 10),
-                fn() => delayedValue('third', 20),
+                delayedValue('first', 30),
+                delayedValue('second', 10),
+                delayedValue('third', 20),
             ];
 
             $results = waitForPromise($handler->concurrent($tasks, 3));
@@ -24,9 +24,9 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
             $tasks = [
-                'task_a' => fn() => delayedValue('result_a', 30),
-                'task_b' => fn() => delayedValue('result_b', 10),
-                'task_c' => fn() => delayedValue('result_c', 20),
+                'task_a' => delayedValue('result_a', 30),
+                'task_b' => delayedValue('result_b', 10),
+                'task_c' => delayedValue('result_c', 20),
             ];
 
             $results = waitForPromise($handler->concurrent($tasks, 3));
@@ -34,7 +34,7 @@ describe('Array Ordering and Key Preservation', function () {
             expect($results)->toBe([
                 'task_a' => 'result_a',
                 'task_b' => 'result_b',
-                'task_c' => 'result_c'
+                'task_c' => 'result_c',
             ]);
             expect(array_keys($results))->toBe(['task_a', 'task_b', 'task_c']);
         });
@@ -43,9 +43,9 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
             $tasks = [
-                5 => fn() => delayedValue('fifth', 30),
-                10 => fn() => delayedValue('tenth', 10),
-                15 => fn() => delayedValue('fifteenth', 20),
+                5 => delayedValue('fifth', 30),
+                10 => delayedValue('tenth', 10),
+                15 => delayedValue('fifteenth', 20),
             ];
 
             $results = waitForPromise($handler->concurrent($tasks, 3));
@@ -53,7 +53,7 @@ describe('Array Ordering and Key Preservation', function () {
             expect($results)->toBe([
                 5 => 'fifth',
                 10 => 'tenth',
-                15 => 'fifteenth'
+                15 => 'fifteenth',
             ]);
             expect(array_keys($results))->toBe([5, 10, 15]);
         });
@@ -62,11 +62,11 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
             $tasks = [
-                fn() => delayedValue('slow', 50),
-                fn() => delayedValue('fast', 5),
-                fn() => delayedValue('medium', 25),
-                fn() => delayedValue('very_fast', 1),
-                fn() => delayedValue('very_slow', 100),
+                delayedValue('slow', 50),
+                delayedValue('fast', 5),
+                delayedValue('medium', 25),
+                delayedValue('very_fast', 1),
+                delayedValue('very_slow', 100),
             ];
 
             $results = waitForPromise($handler->concurrent($tasks, 2));
@@ -78,10 +78,10 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
             $tasks = [
-                fn() => delayedValue('batch1_item1', 20),
-                fn() => delayedValue('batch1_item2', 10),
-                fn() => delayedValue('batch2_item1', 30),
-                fn() => delayedValue('batch2_item2', 5),
+                delayedValue('batch1_item1', 20),
+                delayedValue('batch1_item2', 10),
+                delayedValue('batch2_item1', 30),
+                delayedValue('batch2_item2', 5),
             ];
 
             $results = waitForPromise($handler->batch($tasks, 2, 2));
@@ -93,10 +93,10 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
             $tasks = [
-                'user_1' => fn() => delayedValue(['id' => 1, 'name' => 'Alice'], 20),
-                'user_2' => fn() => delayedValue(['id' => 2, 'name' => 'Bob'], 10),
-                'user_3' => fn() => delayedValue(['id' => 3, 'name' => 'Charlie'], 30),
-                'user_4' => fn() => delayedValue(['id' => 4, 'name' => 'Diana'], 5),
+                'user_1' => delayedValue(['id' => 1, 'name' => 'Alice'], 20),
+                'user_2' => delayedValue(['id' => 2, 'name' => 'Bob'], 10),
+                'user_3' => delayedValue(['id' => 3, 'name' => 'Charlie'], 30),
+                'user_4' => delayedValue(['id' => 4, 'name' => 'Diana'], 5),
             ];
 
             $results = waitForPromise($handler->batch($tasks, 2, 2));
@@ -114,10 +114,10 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
             $tasks = [
-                100 => fn() => delayedValue('hundred', 20),
-                200 => fn() => delayedValue('two_hundred', 10),
-                300 => fn() => delayedValue('three_hundred', 30),
-                400 => fn() => delayedValue('four_hundred', 5),
+                100 => delayedValue('hundred', 20),
+                200 => delayedValue('two_hundred', 10),
+                300 => delayedValue('three_hundred', 30),
+                400 => delayedValue('four_hundred', 5),
             ];
 
             $results = waitForPromise($handler->batch($tasks, 2, 2));
@@ -126,7 +126,7 @@ describe('Array Ordering and Key Preservation', function () {
                 100 => 'hundred',
                 200 => 'two_hundred',
                 300 => 'three_hundred',
-                400 => 'four_hundred'
+                400 => 'four_hundred',
             ]);
             expect(array_keys($results))->toBe([100, 200, 300, 400]);
         });
@@ -135,10 +135,10 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
             $tasks = [
-                fn() => delayedValue('success_1', 30),
-                fn() => delayedReject('error_1', 10),
-                fn() => delayedValue('success_2', 20),
-                fn() => delayedReject('error_2', 5),
+                delayedValue('success_1', 30),
+                delayedReject('error_1', 10),
+                delayedValue('success_2', 20),
+                delayedReject('error_2', 5),
             ];
 
             $results = waitForPromise($handler->concurrentSettled($tasks, 4));
@@ -157,9 +157,9 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
             $tasks = [
-                'api_call_1' => fn() => delayedValue('response_1', 25),
-                'api_call_2' => fn() => delayedReject('timeout', 15),
-                'api_call_3' => fn() => delayedValue('response_3', 35),
+                'api_call_1' => delayedValue('response_1', 25),
+                'api_call_2' => delayedReject('timeout', 15),
+                'api_call_3' => delayedValue('response_3', 35),
             ];
 
             $results = waitForPromise($handler->concurrentSettled($tasks, 3));
@@ -174,9 +174,9 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
             $tasks = [
-                7 => fn() => delayedValue('lucky_seven', 25),
-                13 => fn() => delayedReject('unlucky_thirteen', 15),
-                21 => fn() => delayedValue('twenty_one', 35),
+                7 => delayedValue('lucky_seven', 25),
+                13 => delayedReject('unlucky_thirteen', 15),
+                21 => delayedValue('twenty_one', 35),
             ];
 
             $results = waitForPromise($handler->concurrentSettled($tasks, 3));
@@ -192,7 +192,7 @@ describe('Array Ordering and Key Preservation', function () {
         it('handles empty arrays correctly', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
-            
+
             $results = waitForPromise($handler->concurrent([], 5));
             expect($results)->toBe([]);
 
@@ -206,7 +206,7 @@ describe('Array Ordering and Key Preservation', function () {
         it('handles single item arrays correctly', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
-            $tasks = ['single' => fn() => delayedValue('result', 10)];
+            $tasks = ['single' => delayedValue('result', 10)];
             $results = waitForPromise($handler->concurrent($tasks, 1));
 
             expect($results)->toBe(['single' => 'result']);
@@ -215,7 +215,7 @@ describe('Array Ordering and Key Preservation', function () {
         it('handles single item with numeric key correctly', function () {
             resetEventLoop();
             $handler = concurrencyHandler();
-            $tasks = [42 => fn() => delayedValue('answer', 10)];
+            $tasks = [42 => delayedValue('answer', 10)];
             $results = waitForPromise($handler->concurrent($tasks, 1));
 
             expect($results)->toBe([42 => 'answer']);
@@ -250,7 +250,7 @@ describe('Array Ordering and Key Preservation', function () {
             expect($results)->toBe([
                 25 => 'quarter',
                 50 => 'half',
-                75 => 'three_quarters'
+                75 => 'three_quarters',
             ]);
             expect(array_keys($results))->toBe([25, 50, 75]);
         });
@@ -285,7 +285,7 @@ describe('Array Ordering and Key Preservation', function () {
             expect($results)->toBe([
                 'key_a' => 'value_a',
                 'key_b' => 'value_b',
-                'key_c' => 'value_c'
+                'key_c' => 'value_c',
             ]);
         });
 
@@ -303,7 +303,7 @@ describe('Array Ordering and Key Preservation', function () {
             expect($results)->toBe([
                 5 => 'fifth',
                 10 => 'tenth',
-                15 => 'fifteenth'
+                15 => 'fifteenth',
             ]);
             expect(array_keys($results))->toBe([5, 10, 15]);
         });
@@ -337,7 +337,7 @@ describe('Array Ordering and Key Preservation', function () {
             expect($results)->toBe([
                 1 => 'one',
                 2 => 'two',
-                3 => 'three'
+                3 => 'three',
             ]);
             expect(array_keys($results))->toBe([1, 2, 3]);
         });
@@ -410,7 +410,7 @@ describe('Array Ordering and Key Preservation', function () {
             expect($results)->toBe([
                 0 => 'zero',
                 2 => 'two',
-                4 => 'four'
+                4 => 'four',
             ]);
             expect(array_keys($results))->toBe([0, 2, 4]);
         });
@@ -429,7 +429,7 @@ describe('Array Ordering and Key Preservation', function () {
             expect($results)->toBe([
                 -1 => 'negative_one',
                 0 => 'zero',
-                1 => 'positive_one'
+                1 => 'positive_one',
             ]);
             expect(array_keys($results))->toBe([-1, 0, 1]);
         });
@@ -440,11 +440,11 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handlers = complexScenarioHandlers();
             $concurrencyHandler = $handlers['concurrencyHandler'];
-            
+
             $tasks = [
-                '0' => fn() => delayedValue('zero', 20),
-                '1' => fn() => delayedValue('one', 10),
-                '2' => fn() => delayedValue('two', 30),
+                '0' => delayedValue('zero', 20),
+                '1' => delayedValue('one', 10),
+                '2' => delayedValue('two', 30),
             ];
 
             $results = waitForPromise($concurrencyHandler->concurrent($tasks, 3));
@@ -457,12 +457,12 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handlers = complexScenarioHandlers();
             $concurrencyHandler = $handlers['concurrencyHandler'];
-            
+
             $tasks = [
-                0 => fn() => delayedValue('numeric_zero', 20),
-                'string_key' => fn() => delayedValue('string_value', 10),
-                5 => fn() => delayedValue('numeric_five', 30),
-                'another' => fn() => delayedValue('another_string', 15),
+                0 => delayedValue('numeric_zero', 20),
+                'string_key' => delayedValue('string_value', 10),
+                5 => delayedValue('numeric_five', 30),
+                'another' => delayedValue('another_string', 15),
             ];
 
             $results = waitForPromise($concurrencyHandler->concurrent($tasks, 4));
@@ -480,9 +480,9 @@ describe('Array Ordering and Key Preservation', function () {
             $collectionHandler = $handlers['collectionHandler'];
 
             $tasks = [
-                1000 => fn() => delayedValue('thousand', 30),
-                2000 => fn() => delayedValue('two_thousand', 10),
-                3000 => fn() => delayedValue('three_thousand', 20),
+                1000 => delayedValue('thousand', 30),
+                2000 => delayedValue('two_thousand', 10),
+                3000 => delayedValue('three_thousand', 20),
             ];
 
             $results = waitForPromise($collectionHandler->all($tasks));
@@ -490,7 +490,7 @@ describe('Array Ordering and Key Preservation', function () {
             expect($results)->toBe([
                 1000 => 'thousand',
                 2000 => 'two_thousand',
-                3000 => 'three_thousand'
+                3000 => 'three_thousand',
             ]);
             expect(array_keys($results))->toBe([1000, 2000, 3000]);
         });
@@ -506,7 +506,7 @@ describe('Array Ordering and Key Preservation', function () {
             for ($i = 0; $i < 50; $i++) {
                 $value = "item_{$i}";
                 $delay = 50 - $i;
-                $tasks[] = fn() => delayedValue($value, $delay);
+                $tasks[] = delayedValue($value, $delay);
                 $expected[] = $value;
             }
 
@@ -519,13 +519,13 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handlers = complexScenarioHandlers();
             $concurrencyHandler = $handlers['concurrencyHandler'];
-            
+
             $tasks = [
-                fn() => delayedValue(['array' => 'data'], 20),
-                fn() => delayedValue(42, 10),
-                fn() => delayedValue('string', 30),
-                fn() => delayedValue(true, 5),
-                fn() => delayedValue(null, 15),
+                delayedValue(['array' => 'data'], 20),
+                delayedValue(42, 10),
+                delayedValue('string', 30),
+                delayedValue(true, 5),
+                delayedValue(null, 15),
             ];
 
             $results = waitForPromise($concurrencyHandler->concurrent($tasks, 5));
@@ -541,7 +541,7 @@ describe('Array Ordering and Key Preservation', function () {
             resetEventLoop();
             $handlers = complexScenarioHandlers();
             $collectionHandler = $handlers['collectionHandler'];
-            
+
             $promises = [
                 10 => delayedValue('ten', 50),
                 5 => delayedValue('five', 10),
@@ -555,7 +555,7 @@ describe('Array Ordering and Key Preservation', function () {
                 10 => 'ten',
                 5 => 'five',
                 15 => 'fifteen',
-                1 => 'one'
+                1 => 'one',
             ]);
             expect(array_keys($results))->toBe([10, 5, 15, 1]);
         });
@@ -585,10 +585,9 @@ describe('Array Ordering and Key Preservation', function () {
             expect($nonSequentialResults)->toBe([
                 0 => 'zero',
                 1 => 'one',
-                3 => 'three'
+                3 => 'three',
             ]);
             expect(array_keys($nonSequentialResults))->toBe([0, 1, 3]);
         });
     });
 });
-

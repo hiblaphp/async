@@ -4,14 +4,14 @@ describe('ConcurrencyHandler', function () {
     it('runs tasks concurrently', function () {
         $handler = concurrencyHandler();
         $tasks = [
-            fn() => 'result1',
-            fn() => 'result2',
-            fn() => 'result3',
+            fn () => 'result1',
+            fn () => 'result2',
+            fn () => 'result3',
         ];
-        
+
         $promise = $handler->concurrent($tasks, 2);
         $results = waitForPromise($promise);
-        
+
         expect($results)->toBe(['result1', 'result2', 'result3']);
     });
 
@@ -19,18 +19,19 @@ describe('ConcurrencyHandler', function () {
         $handler = concurrencyHandler();
         $counter = 0;
         $maxConcurrent = 0;
-        
+
         $tasks = array_fill(0, 5, function () use (&$counter, &$maxConcurrent) {
             $counter++;
             $maxConcurrent = max($maxConcurrent, $counter);
             usleep(10000); // 10ms
             $counter--;
+
             return 'done';
         });
-        
+
         $promise = $handler->concurrent($tasks, 2);
         waitForPromise($promise);
-        
+
         expect($maxConcurrent)->toBeLessThanOrEqual(2);
     });
 
@@ -38,20 +39,20 @@ describe('ConcurrencyHandler', function () {
         $handler = concurrencyHandler();
         $promise = $handler->concurrent([]);
         $results = waitForPromise($promise);
-        
+
         expect($results)->toBe([]);
     });
 
     it('preserves array keys', function () {
         $handler = concurrencyHandler();
         $tasks = [
-            'task1' => fn() => 'result1',
-            'task2' => fn() => 'result2',
+            'task1' => fn () => 'result1',
+            'task2' => fn () => 'result2',
         ];
-        
+
         $promise = $handler->concurrent($tasks);
         $results = waitForPromise($promise);
-        
+
         expect($results)->toBe([
             'task1' => 'result1',
             'task2' => 'result2',
@@ -61,23 +62,24 @@ describe('ConcurrencyHandler', function () {
     it('handles task exceptions', function () {
         $handler = concurrencyHandler();
         $tasks = [
-            fn() => 'success',
-            fn() => throw new Exception('task failed'),
+            fn () => 'success',
+            fn () => throw new Exception('task failed'),
         ];
-        
+
         $promise = $handler->concurrent($tasks);
-        
-        expect(fn() => waitForPromise($promise))
-            ->toThrow(Exception::class, 'task failed');
+
+        expect(fn () => waitForPromise($promise))
+            ->toThrow(Exception::class, 'task failed')
+        ;
     });
 
     it('runs batch processing', function () {
         $handler = concurrencyHandler();
-        $tasks = array_fill(0, 5, fn() => 'result');
-        
+        $tasks = array_fill(0, 5, fn () => 'result');
+
         $promise = $handler->batch($tasks, 2);
         $results = waitForPromise($promise);
-        
+
         expect($results)->toHaveCount(5);
         expect(array_unique($results))->toBe(['result']);
     });
@@ -85,14 +87,14 @@ describe('ConcurrencyHandler', function () {
     it('handles concurrent settled operations', function () {
         $handler = concurrencyHandler();
         $tasks = [
-            fn() => 'success',
-            fn() => throw new Exception('failure'),
-            fn() => 'another success',
+            fn () => 'success',
+            fn () => throw new Exception('failure'),
+            fn () => 'another success',
         ];
-        
+
         $promise = $handler->concurrentSettled($tasks);
         $results = waitForPromise($promise);
-        
+
         expect($results)->toHaveCount(3);
         expect($results[0]['status'])->toBe('fulfilled');
         expect($results[0]['value'])->toBe('success');
@@ -103,10 +105,12 @@ describe('ConcurrencyHandler', function () {
     it('validates concurrency parameter', function () {
         $handler = concurrencyHandler();
 
-        expect(fn() => $handler->concurrent([], 0)->await())
-            ->toThrow(InvalidArgumentException::class, 'Concurrency limit must be greater than 0');
-            
-        expect(fn() => $handler->concurrent([], -1)->await())
-            ->toThrow(InvalidArgumentException::class, 'Concurrency limit must be greater than 0');
+        expect(fn () => $handler->concurrent([], 0)->await())
+            ->toThrow(InvalidArgumentException::class, 'Concurrency limit must be greater than 0')
+        ;
+
+        expect(fn () => $handler->concurrent([], -1)->await())
+            ->toThrow(InvalidArgumentException::class, 'Concurrency limit must be greater than 0')
+        ;
     });
 });

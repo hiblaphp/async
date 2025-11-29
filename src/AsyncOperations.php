@@ -7,9 +7,7 @@ use Hibla\Async\Handlers\AwaitHandler;
 use Hibla\Async\Handlers\ConcurrencyHandler;
 use Hibla\Async\Handlers\FiberContextHandler;
 use Hibla\Async\Handlers\PromiseCollectionHandler;
-use Hibla\Async\Handlers\PromiseHandler;
 use Hibla\Async\Handlers\TimerHandler;
-use Hibla\Async\Interfaces\AsyncOperationsInterface;
 use Hibla\Promise\Interfaces\CancellablePromiseInterface;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
@@ -23,17 +21,12 @@ use Hibla\Promise\Interfaces\PromiseInterface;
  * The class acts as a facade over various specialized handlers, providing a
  * unified interface for common async patterns and operations.
  */
-class AsyncOperations implements AsyncOperationsInterface
+class AsyncOperations
 {
     /**
      * @var FiberContextHandler Handles fiber context detection and management
      */
     private FiberContextHandler $contextHandler;
-
-    /**
-     * @var PromiseHandler Creates and manages basic promise operations
-     */
-    private PromiseHandler $promiseHandler;
 
     /**
      * @var AsyncExecutionHandler Handles conversion of sync functions to async
@@ -69,7 +62,6 @@ class AsyncOperations implements AsyncOperationsInterface
     public function __construct()
     {
         $this->contextHandler = new FiberContextHandler();
-        $this->promiseHandler = new PromiseHandler();
         $this->executionHandler = new AsyncExecutionHandler();
         $this->awaitHandler = new AwaitHandler($this->contextHandler);
         $this->timerHandler = new TimerHandler();
@@ -91,40 +83,16 @@ class AsyncOperations implements AsyncOperationsInterface
     }
 
     /**
-     * Create a resolved promise with the given value.
-     *
-     * @template TValue
-     *
-     * @param  TValue  $value  The value to resolve the promise with
-     * @return PromiseInterface<TValue> A promise resolved with the provided value
-     */
-    public function resolved(mixed $value): PromiseInterface
-    {
-        return $this->promiseHandler->resolve($value);
-    }
-
-    /**
-     * Create a rejected promise with the given reason.
-     *
-     * @param  mixed  $reason  The reason for rejection (typically an exception)
-     * @return PromiseInterface<mixed> A promise rejected with the provided reason
-     */
-    public function rejected(mixed $reason): PromiseInterface
-    {
-        return $this->promiseHandler->reject($reason);
-    }
-
-    /**
      * Convert a regular function into an async function.
      *
      * @template TReturn The return type of the async function
      *
-     * @param  callable(): TReturn  $asyncFunction  The function to convert to async
+     * @param  callable(): TReturn  $callback  The function to convert to async
      * @return callable(): PromiseInterface<TReturn> An async version of the provided function
      */
-    public function async(callable $asyncFunction): callable
+    public function async(callable $callback): callable
     {
-        return $this->executionHandler->async($asyncFunction);
+        return $this->executionHandler->async($callback);
     }
 
     /**
@@ -149,7 +117,7 @@ class AsyncOperations implements AsyncOperationsInterface
      * // Outside async context - blocks until resolved
      * $result = await($promise);
      * ```
-     * 
+     *
      * @template TValue The expected type of the resolved value from the promise.
      *
      * @param  PromiseInterface<TValue>  $promise  The promise to await.
@@ -180,7 +148,7 @@ class AsyncOperations implements AsyncOperationsInterface
      * the first rejection reason.
      *
      * @template TAllValue
-     * @param  array<int|string, PromiseInterface<TAllValue>|callable(): PromiseInterface<TAllValue>>  $promises  Array of promises to wait for
+     * @param  array<int|string, PromiseInterface<TAllValue>>  $promises  Array of promises to wait for
      * @return PromiseInterface<array<int|string, TAllValue>> A promise that resolves with an array of results
      */
     public function all(array $promises): PromiseInterface
@@ -196,7 +164,7 @@ class AsyncOperations implements AsyncOperationsInterface
      * This method never rejects - it always resolves with an array of settlement results.
      *
      * @template TAllSettledValue
-     * @param  array<int|string, PromiseInterface<TAllSettledValue>|callable(): PromiseInterface<TAllSettledValue>>  $promises
+     * @param  array<int|string, PromiseInterface<TAllSettledValue>>  $promises
      * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: TAllSettledValue, reason?: mixed}>>
      */
     public function allSettled(array $promises): PromiseInterface
@@ -211,7 +179,7 @@ class AsyncOperations implements AsyncOperationsInterface
      * the first promise to settle.
      *
      * @template TRaceValue
-     * @param  array<int|string, PromiseInterface<TRaceValue>|callable(): PromiseInterface<TRaceValue>>  $promises  Array of promises to race
+     * @param  array<int|string, PromiseInterface<TRaceValue>>  $promises  Array of promises to race
      * @return PromiseInterface<TRaceValue> A promise that settles with the first result
      */
     public function race(array $promises): PromiseInterface
@@ -226,7 +194,7 @@ class AsyncOperations implements AsyncOperationsInterface
      * promise that resolves, or rejects if all promises reject.
      *
      * @template TAnyValue
-     * @param  array<int|string, PromiseInterface<TAnyValue>|callable(): PromiseInterface<TAnyValue>>  $promises  Array of promises to wait for
+     * @param  array<int|string, PromiseInterface<TAnyValue>>  $promises  Array of promises to wait for
      * @return PromiseInterface<TAnyValue> A promise that resolves with the first settled value
      */
     public function any(array $promises): PromiseInterface

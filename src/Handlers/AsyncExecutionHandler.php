@@ -25,17 +25,17 @@ final readonly class AsyncExecutionHandler
      *
      * @template TReturn The return type of the async function
      *
-     * @param  callable(): TReturn  $asyncFunction  The function to make asynchronous.
+     * @param  callable(): TReturn  $callback  The function to make asynchronous.
      * @return callable(): PromiseInterface<TReturn> A function that returns a Promise when called.
      */
-    public function async(callable $asyncFunction): callable
+    public function async(callable $callback): callable
     {
         /** @phpstan-ignore-next-line - Closure generic type cannot be inferred through Promise constructor */
-        return function (...$args) use ($asyncFunction): PromiseInterface {
-            return new Promise(function (callable $resolve, callable $reject) use ($asyncFunction, $args) {
-                $fiber = new Fiber(function () use ($asyncFunction, $args, $resolve, $reject): void {
+        return function (...$args) use ($callback): PromiseInterface {
+            return new Promise(function (callable $resolve, callable $reject) use ($callback, $args) {
+                $fiber = new Fiber(function () use ($callback, $args, $resolve, $reject): void {
                     try {
-                        $result = $asyncFunction(...$args);
+                        $result = $callback(...$args);
                         $resolve($result);
                     } catch (Throwable $e) {
                         $reject($e);

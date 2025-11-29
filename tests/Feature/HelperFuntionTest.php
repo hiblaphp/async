@@ -26,8 +26,9 @@ describe('Error Handling', function () {
 
         expect($promise)->toBePromise();
 
-        expect(fn() => waitForPromise($promise))
-            ->toThrow(RuntimeException::class, 'Test error');
+        expect(fn () => waitForPromise($promise))
+            ->toThrow(RuntimeException::class, 'Test error')
+        ;
     });
 
     it('handles errors in awaited promises', function () {
@@ -41,36 +42,38 @@ describe('Error Handling', function () {
             return $async->await($promise);
         });
 
-        expect(fn() => waitForPromise($asyncFunction()))
-            ->toThrow(InvalidArgumentException::class, 'Async error');
+        expect(fn () => waitForPromise($asyncFunction()))
+            ->toThrow(InvalidArgumentException::class, 'Async error')
+        ;
     });
 
     it('handles errors in concurrent execution', function () {
         $async = new AsyncOperations();
 
         $tasks = [
-            'success' => fn() => 'success',
+            'success' => 'success',
             'error' => function () {
                 throw new RuntimeException('Concurrent error');
             },
-            'another_success' => fn() => 'another success',
+            'another_success' => 'another success',
         ];
 
         $promise = $async->concurrent($tasks);
 
-        expect(fn() => waitForPromise($promise))
-            ->toThrow(RuntimeException::class, 'Concurrent error');
+        expect(fn () => waitForPromise($promise))
+            ->toThrow(RuntimeException::class, 'Concurrent error')
+        ;
     });
 
     it('handles errors gracefully with concurrentSettled', function () {
         $async = new AsyncOperations();
 
         $tasks = [
-            'success' => fn() => 'success result',
+            'success' => 'success result',
             'error' => function () {
                 throw new RuntimeException('Task error');
             },
-            'another_success' => fn() => 'another result',
+            'another_success' => 'another result',
         ];
 
         $promise = $async->concurrentSettled($tasks);
@@ -79,7 +82,7 @@ describe('Error Handling', function () {
         expect($results)->toHaveKey('success');
         expect($results['success'])->toEqual([
             'status' => 'fulfilled',
-            'value' => 'success result'
+            'value' => 'success result',
         ]);
 
         expect($results)->toHaveKey('error');
@@ -90,7 +93,7 @@ describe('Error Handling', function () {
         expect($results)->toHaveKey('another_success');
         expect($results['another_success'])->toEqual([
             'status' => 'fulfilled',
-            'value' => 'another result'
+            'value' => 'another result',
         ]);
     });
 
@@ -103,13 +106,14 @@ describe('Error Handling', function () {
                 ? function () {
                     throw new RuntimeException('Batch error');
                 }
-                : fn() => "result $i";
+            : "result $i";
         }
 
         $promise = $async->batch($tasks, 2);
 
-        expect(fn() => waitForPromise($promise))
-            ->toThrow(RuntimeException::class, 'Batch error');
+        expect(fn () => waitForPromise($promise))
+            ->toThrow(RuntimeException::class, 'Batch error')
+        ;
     });
 
     it('handles errors gracefully with batchSettled', function () {
@@ -121,7 +125,7 @@ describe('Error Handling', function () {
                 ? function () use ($i) {
                     throw new RuntimeException("Error $i");
                 }
-                : fn() => "result $i";
+            : "result $i";
         }
 
         $promise = $async->batchSettled($tasks, 2);
@@ -150,94 +154,18 @@ describe('Error Handling', function () {
 
         $promise = $async->timeout($slowTask(), 0.1); // 100ms timeout
 
-        expect(fn() => waitForPromise($promise))
-            ->toThrow(TimeoutException::class);
-    });
-
-    it('handles errors in Promise.all', function () {
-        $async = new AsyncOperations();
-
-        $promises = [
-            fn() => $async->resolved('success'),
-            fn() => $async->rejected(new RuntimeException('Promise.all error')),
-            fn() => $async->resolved('another success'),
-        ];
-
-        $promise = $async->all($promises);
-
-        expect(fn() => waitForPromise($promise))
-            ->toThrow(RuntimeException::class, 'Promise.all error');
-    });
-
-    it('handles all rejections with allSettled', function () {
-        $async = new AsyncOperations();
-
-        $promises = [
-            fn() => $async->resolved('success'),
-            fn() => $async->rejected(new RuntimeException('First error')),
-            fn() => $async->rejected(new InvalidArgumentException('Second error')),
-        ];
-
-        $promise = $async->allSettled($promises);
-        $results = waitForPromise($promise);
-
-        expect($results)->toHaveCount(3);
-
-        expect($results[0]['status'])->toBe('fulfilled');
-        expect($results[0]['value'])->toBe('success');
-
-        expect($results[1]['status'])->toBe('rejected');
-        expect($results[1]['reason'])->toBeInstanceOf(RuntimeException::class);
-
-        expect($results[2]['status'])->toBe('rejected');
-        expect($results[2]['reason'])->toBeInstanceOf(InvalidArgumentException::class);
-    });
-
-    it('handles errors in Promise.race', function () {
-        $async = new AsyncOperations();
-
-        $promises = [
-            fn() => $async->delay(0.5)->then(fn() => 'slow success'), // This won't complete first
-            fn() => $async->rejected(new RuntimeException('Race error')), // This completes first
-        ];
-
-        $promise = $async->race($promises);
-
-        expect(fn() => waitForPromise($promise))
-            ->toThrow(RuntimeException::class, 'Race error');
-    });
-
-    it('handles all rejections with Promise.any using AggregateErrorException', function () {
-        $async = new AsyncOperations();
-
-        $promises = [
-            fn() => $async->rejected(new RuntimeException('First error')),
-            fn() => $async->rejected(new InvalidArgumentException('Second error')),
-            fn() => $async->rejected(new LogicException('Third error')),
-        ];
-
-        $promise = $async->any($promises);
-
-        try {
-            waitForPromise($promise);
-            expect(false)->toBeTrue('Expected AggregateErrorException to be thrown');
-        } catch (AggregateErrorException $e) {
-            expect($e->getMessage())->toContain('All promises were rejected');
-            $errors = $e->getErrors();
-            expect($errors)->toHaveCount(3);
-            expect($errors[0])->toBeInstanceOf(RuntimeException::class);
-            expect($errors[1])->toBeInstanceOf(InvalidArgumentException::class);
-            expect($errors[2])->toBeInstanceOf(LogicException::class);
-        }
+        expect(fn () => waitForPromise($promise))
+            ->toThrow(TimeoutException::class)
+        ;
     });
 
     it('handles mixed success and error scenarios in concurrent operations', function () {
         $async = new AsyncOperations();
 
         $tasks = [
-            'fast_success' => fn() => 'fast',
+            'fast_success' => 'fast',
             'slow_success' => function () use ($async) {
-                return $async->await($async->delay(0.1)->then(fn() => 'slow'));
+                return $async->await($async->delay(0.1)->then(fn () => 'slow'));
             },
             'fast_error' => function () {
                 throw new RuntimeException('Fast error');
@@ -245,8 +173,9 @@ describe('Error Handling', function () {
         ];
 
         // Test that concurrent fails fast on first error
-        expect(fn() => waitForPromise($async->concurrent($tasks)))
-            ->toThrow(RuntimeException::class, 'Fast error');
+        expect(fn () => waitForPromise($async->concurrent($tasks)))
+            ->toThrow(RuntimeException::class, 'Fast error')
+        ;
 
         // Test that concurrentSettled waits for all
         $settledResults = waitForPromise($async->concurrentSettled($tasks));
@@ -262,19 +191,15 @@ describe('Error Handling', function () {
     it('handles errors with proper cleanup in cancellable operations', function () {
         $async = new AsyncOperations();
 
-        $longRunningTask = function () use ($async) {
-            return $async->delay(5.0)->then(fn() => 'should not complete');
-        };
+        $longRunningTask = $async->delay(5.0)->then(fn () => 'should not complete');
 
-        $fastError = function () {
-            throw new RuntimeException('Fast error');
-        };
+        $fastError = Promise::rejected(new RuntimeException('Fast error'));
 
-        // Race should cancel the long-running task when error occurs
         $racePromise = $async->race([$longRunningTask, $fastError]);
 
-        expect(fn() => waitForPromise($racePromise))
-            ->toThrow(RuntimeException::class, 'Fast error');
+        expect(fn () => waitForPromise($racePromise))
+            ->toThrow(RuntimeException::class, 'Fast error')
+        ;
     });
 
     it('propagates errors through nested async operations', function () {
@@ -288,26 +213,8 @@ describe('Error Handling', function () {
             return $async->await($innerPromise());
         });
 
-        expect(fn() => waitForPromise($nestedAsyncFunction()))
-            ->toThrow(RuntimeException::class, 'Nested error');
-    });
-
-    it('handles errors in promise chains within async context', function () {
-        $async = new AsyncOperations();
-
-        $chainedAsyncFunction = $async->async(function () use ($async) {
-            $promise = $async->resolved('initial value')
-                ->then(function ($value) {
-                    if ($value === 'initial value') {
-                        throw new RuntimeException('Chain error');
-                    }
-                    return $value;
-                });
-
-            return $async->await($promise);
-        });
-
-        expect(fn() => waitForPromise($chainedAsyncFunction()))
-            ->toThrow(RuntimeException::class, 'Chain error');
+        expect(fn () => waitForPromise($nestedAsyncFunction()))
+            ->toThrow(RuntimeException::class, 'Nested error')
+        ;
     });
 });

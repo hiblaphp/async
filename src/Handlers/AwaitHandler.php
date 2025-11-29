@@ -49,7 +49,7 @@ final readonly class AwaitHandler
      * // Outside fiber - blocks until resolved
      * $result = $handler->await($promise); // Blocking
      * ```
-     * 
+     *
      * @template TValue The type of the resolved value of the promise.
      *
      * @param  PromiseInterface<TValue>  $promise  The promise to await.
@@ -67,19 +67,16 @@ final readonly class AwaitHandler
         $result = null;
         $error = null;
         $completed = false;
-        $hasResult = false;
 
         $promise
-            ->then(function ($value) use (&$result, &$completed, &$hasResult) {
+            ->then(function ($value) use (&$result, &$completed) {
                 $result = $value;
                 $completed = true;
-                $hasResult = true;
             })
             ->catch(function ($reason) use (&$error, &$completed) {
                 $error = $reason;
                 $completed = true;
-            })
-        ;
+            });
 
         // Suspend the fiber until the promise completes
         while (! $completed) {
@@ -89,8 +86,8 @@ final readonly class AwaitHandler
         if ($error !== null) {
             $errorMessage = match (true) {
                 $error instanceof Throwable => throw $error,
-                is_string($error) => $error,
-                is_object($error) && method_exists($error, '__toString') => (string) $error,
+                \is_string($error) => $error,
+                \is_object($error) && method_exists($error, '__toString') => (string) $error,
                 default => 'Promise rejected with: ' . var_export($error, true)
             };
 

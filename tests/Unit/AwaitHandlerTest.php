@@ -6,7 +6,6 @@ use Hibla\Async\Handlers\FiberContextHandler;
 use Hibla\EventLoop\Loop;
 use Hibla\Promise\Promise;
 
-
 function awaitHandler(): AwaitHandler
 {
     return new AwaitHandler(new FiberContextHandler());
@@ -27,8 +26,9 @@ describe('AwaitHandler', function () {
         $promise = new Promise();
         $promise->reject(new Exception('test error'));
 
-        expect(fn() => $handler->await($promise))
-            ->toThrow(Exception::class, 'test error');
+        expect(fn () => $handler->await($promise))
+            ->toThrow(Exception::class, 'test error')
+        ;
     });
 
     it('awaits promise inside fiber context using AsyncExecutionHandler', function () {
@@ -56,13 +56,14 @@ describe('AwaitHandler', function () {
         $promise = new Promise();
         $promise->reject('string error');
 
-        expect(fn() => $handler->await($promise))
-            ->toThrow(Exception::class, 'string error');
+        expect(fn () => $handler->await($promise))
+            ->toThrow(Exception::class, 'string error')
+        ;
     });
 
     it('handles object rejection reasons with toString', function () {
         $handler = awaitHandler();
-        $errorObj = new class {
+        $errorObj = new class () {
             public function __toString(): string
             {
                 return 'object error';
@@ -72,7 +73,8 @@ describe('AwaitHandler', function () {
         $promise = new Promise();
         $promise->reject($errorObj);
 
-        expect(fn() => $handler->await($promise))
-            ->toThrow(Exception::class, 'object error');
+        expect(fn () => $handler->await($promise))
+            ->toThrow(Exception::class, 'object error')
+        ;
     });
 });

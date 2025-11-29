@@ -37,16 +37,16 @@ expect()->extend('toBeCancellablePromise', function () {
 
 expect()->extend('toBeSettled', function () {
     $promise = $this->value;
-    
-    if (!($promise instanceof PromiseInterface)) {
+
+    if (! ($promise instanceof PromiseInterface)) {
         throw new InvalidArgumentException('Value must be a Promise');
     }
-    
+
     return $this->toBe($promise->isPending());
 });
 
 function waitForPromise(PromiseInterface $promise): mixed
-{    
+{
     return $promise->await();
 }
 

@@ -21,7 +21,7 @@ function in_fiber(): bool
  * Convert a regular function into an async function that returns a Promise.
  *
  * @template TReturn The return type of the async function
- * 
+ *
  * @param  callable(): TReturn  $asyncFunction  The function to convert to async
  * @return PromiseInterface<TReturn> A promise that resolves to the return value
  *

@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 namespace Hibla\Async\Exceptions;
 
@@ -8,7 +8,7 @@ class AggregateErrorException extends Exception
 {
     /** @var array<int|string, mixed> */
     private array $errors;
-    
+
     /**
      * @param array<int|string, mixed> $errors
      */
@@ -17,7 +17,7 @@ class AggregateErrorException extends Exception
         parent::__construct($message);
         $this->errors = $errors;
     }
-    
+
     /**
      * @return array<int|string, mixed>
      */

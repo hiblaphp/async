@@ -100,7 +100,7 @@ final class Async
      * // Outside async context - blocks until resolved
      * $result = await($promise);
      * ```
-     * 
+     *
      * @template TValue The expected type of the resolved value from the promise.
      *
      * @param  PromiseInterface<TValue>  $promise  The promise to await.

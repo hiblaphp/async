@@ -1,7 +1,9 @@
 <?php
 
-use Hibla\Async\Mutex;
 use function Hibla\async;
+
+use Hibla\Async\Mutex;
+
 use function Hibla\await;
 use function Hibla\delay;
 
@@ -71,19 +73,20 @@ describe('Concurrent Access Protection', function () {
         $mutex = $setup['mutex'];
         $sharedCounter = &$setup['sharedCounter'];
         $sharedLog = &$setup['sharedLog'];
-        
+
         $tasks = [];
-        
+
         for ($i = 1; $i <= 5; $i++) {
-            $tasks[] = async(function() use ($i, $mutex, &$sharedCounter, &$sharedLog) {
+            $tasks[] = async(function () use ($i, $mutex, &$sharedCounter, &$sharedLog) {
                 $lock = await($mutex->acquire());
-                
+
                 $oldValue = $sharedCounter;
                 await(delay(0.01));
                 $sharedCounter++;
                 $sharedLog[] = "Task-$i: $oldValue -> {$sharedCounter}";
-                
+
                 $lock->release();
+
                 return "Task-$i completed";
             });
         }
@@ -94,7 +97,7 @@ describe('Concurrent Access Protection', function () {
 
         expect($sharedCounter)->toBe(5);
         expect(count($sharedLog))->toBe(5);
-        
+
         foreach ($sharedLog as $index => $entry) {
             expect($entry)->toContain("$index -> " . ($index + 1));
         }
@@ -121,10 +124,10 @@ describe('Mutex State Inspection', function () {
         $mutex = $setup['mutex'];
 
         expect($mutex->isLocked())->toBeFalse();
-        
+
         $lock = await($mutex->acquire());
         expect($mutex->isLocked())->toBeTrue();
-        
+
         $lock->release();
         expect($mutex->isLocked())->toBeFalse();
     });
