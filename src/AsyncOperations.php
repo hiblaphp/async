@@ -66,7 +66,7 @@ class AsyncOperations
         $this->awaitHandler = new AwaitHandler($this->contextHandler);
         $this->timerHandler = new TimerHandler();
         $this->collectionHandler = new PromiseCollectionHandler();
-        $this->concurrencyHandler = new ConcurrencyHandler($this->executionHandler);
+        $this->concurrencyHandler = new ConcurrencyHandler();
     }
 
     /**
@@ -222,7 +222,7 @@ class AsyncOperations
      * with too many concurrent operations.
      *
      * @template TConcurrentValue
-     * @param  array<int|string, callable(): (TConcurrentValue|PromiseInterface<TConcurrentValue>)>  $tasks  Array of tasks (callables) to execute
+     * @param  array<int|string, callable(): PromiseInterface<TConcurrentValue>>  $tasks  Array of tasks that return promises
      * @param  int  $concurrency  Maximum number of concurrent executions
      * @return PromiseInterface<array<int|string, TConcurrentValue>> A promise that resolves with all results
      */
@@ -238,7 +238,7 @@ class AsyncOperations
      * controlled concurrency and resource management.
      *
      * @template TBatchValue
-     * @param  array<int|string, callable(): (TBatchValue|PromiseInterface<TBatchValue>)>  $tasks  Array of tasks (callables) to execute
+     * @param  array<int|string, callable(): PromiseInterface<TBatchValue>>  $tasks  Array of tasks that return promises
      * @param  int  $batchSize  Size of each batch to process concurrently
      * @param  int|null  $concurrency  Maximum number of concurrent executions per batch
      * @return PromiseInterface<array<int|string, TBatchValue>> A promise that resolves with all results
@@ -255,7 +255,7 @@ class AsyncOperations
      * This method never rejects - it always resolves with an array of settlement results.
      *
      * @template TConcurrentSettledValue
-     * @param  array<int|string, callable(): (TConcurrentSettledValue|PromiseInterface<TConcurrentSettledValue>)>  $tasks  Array of tasks (callables) to execute
+     * @param  array<int|string, callable(): PromiseInterface<TConcurrentSettledValue>>  $tasks  Array of tasks that return promises
      * @param  int  $concurrency  Maximum number of concurrent executions
      * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: TConcurrentSettledValue, reason?: mixed}>> A promise that resolves with settlement results
      */
@@ -271,7 +271,7 @@ class AsyncOperations
      * This method never rejects - it always resolves with an array of settlement results.
      *
      * @template TBatchSettledValue
-     * @param  array<int|string, callable(): (TBatchSettledValue|PromiseInterface<TBatchSettledValue>)>  $tasks  Array of tasks (callables) to execute
+     * @param  array<int|string, callable(): PromiseInterface<TBatchSettledValue>>  $tasks  Array of tasks that return promises
      * @param  int  $batchSize  Size of each batch to process concurrently
      * @param  int|null  $concurrency  Maximum number of concurrent executions per batch
      * @return PromiseInterface<array<int|string, array{status: 'fulfilled'|'rejected', value?: TBatchSettledValue, reason?: mixed}>> A promise that resolves with settlement results

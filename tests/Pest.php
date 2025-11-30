@@ -7,7 +7,6 @@
 */
 
 use Hibla\Async\Async;
-use Hibla\Async\Handlers\AsyncExecutionHandler;
 use Hibla\Async\Handlers\ConcurrencyHandler;
 use Hibla\Async\Handlers\PromiseCollectionHandler;
 use Hibla\Async\Mutex;
@@ -91,7 +90,7 @@ function scheduleReject($reject, $error, $delayMs)
 
 function concurrencyHandler(): ConcurrencyHandler
 {
-    return new ConcurrencyHandler(new AsyncExecutionHandler());
+    return new ConcurrencyHandler();
 }
 
 function promiseCollectionHandler(): PromiseCollectionHandler
@@ -102,7 +101,7 @@ function promiseCollectionHandler(): PromiseCollectionHandler
 function complexScenarioHandlers(): array
 {
     return [
-        'concurrencyHandler' => new ConcurrencyHandler(new AsyncExecutionHandler()),
+        'concurrencyHandler' => new ConcurrencyHandler(),
         'collectionHandler' => new PromiseCollectionHandler(),
     ];
 }

@@ -6,7 +6,6 @@ use Hibla\Async\Exceptions\AggregateErrorException;
 use Hibla\Async\Exceptions\TimeoutException;
 
 use function Hibla\await;
-
 use function Hibla\delay;
 
 use Hibla\Promise\Interfaces\PromiseInterface;
@@ -165,11 +164,9 @@ describe('Promise Static Methods Integration', function () {
             $promises = [
                 Promise::resolved('sync'),
                 async(fn () => 'async'),
-                function () {
-                    return async(function () {
-                        throw new RuntimeException('async error');
-                    });
-                },
+                async(function () {
+                    throw new RuntimeException('async error');
+                }),
             ];
 
             $promise = Promise::allSettled($promises);
@@ -438,11 +435,13 @@ describe('Promise Static Methods Integration', function () {
 
             $tasks = [];
             for ($i = 0; $i < 5; $i++) {
-                $tasks[] = async(function () use ($i) {
-                    await(delay(0.1));
+                $tasks[] = function () use ($i) {
+                    return async(function () use ($i) {
+                        await(delay(0.1));
 
-                    return "task-$i";
-                });
+                        return "task-$i";
+                    });
+                };
             }
 
             $promise = Promise::concurrent($tasks);
@@ -478,7 +477,7 @@ describe('Promise Static Methods Integration', function () {
                 };
             }
 
-            $promise = Promise::concurrent($tasks, 3); // Limit to 3 concurrent
+            $promise = Promise::concurrent($tasks, 3);
             $results = waitForPromise($promise);
 
             expect($results)->toHaveCount(10);
@@ -503,7 +502,7 @@ describe('Promise Static Methods Integration', function () {
                 };
             }
 
-            $promise = Promise::batch($tasks, 3); // Batch size of 3
+            $promise = Promise::batch($tasks, 3);
             $results = waitForPromise($promise);
 
             expect($results)->toHaveCount(6);
@@ -520,11 +519,17 @@ describe('Promise Static Methods Integration', function () {
     describe('Promise::concurrentSettled() and Promise::batchSettled()', function () {
         it('handles mixed success and failure in concurrent execution', function () {
             $tasks = [
-                async(fn () => 'success-1'),
-                async(function () {
-                    throw new RuntimeException('error-1');
-                }),
-                async(fn () => 'success-2'),
+                function () {
+                    return async(fn () => 'success-1');
+                },
+                function () {
+                    return async(function () {
+                        throw new RuntimeException('error-1');
+                    });
+                },
+                function () {
+                    return async(fn () => 'success-2');
+                },
             ];
 
             $promise = Promise::concurrentSettled($tasks);
@@ -546,11 +551,15 @@ describe('Promise Static Methods Integration', function () {
             $tasks = [];
             for ($i = 0; $i < 6; $i++) {
                 if ($i % 2 === 0) {
-                    $tasks[] = async(fn () => "success-$i");
+                    $tasks[] = function () use ($i) {
+                        return async(fn () => "success-$i");
+                    };
                 } else {
-                    $tasks[] = async(function () use ($i) {
-                        throw new RuntimeException("error-$i");
-                    });
+                    $tasks[] = function () use ($i) {
+                        return async(function () use ($i) {
+                            throw new RuntimeException("error-$i");
+                        });
+                    };
                 }
             }
 

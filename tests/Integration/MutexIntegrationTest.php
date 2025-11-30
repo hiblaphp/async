@@ -112,16 +112,19 @@ describe('Promise::concurrent() Integration', function () {
 
         for ($i = 1; $i <= 6; $i++) {
             $tasks[] = function () use ($mutex, &$sharedCounter, &$sharedLog, $i) {
-                $lock = await($mutex->acquire());
+                // Return a promise directly without wrapping in async again
+                return async(function () use ($mutex, &$sharedCounter, &$sharedLog, $i) {
+                    $lock = await($mutex->acquire());
 
-                $oldValue = $sharedCounter;
-                await(delay(0.01));
-                $sharedCounter++;
-                $sharedLog[] = "ConcTask-$i: $oldValue -> {$sharedCounter}";
+                    $oldValue = $sharedCounter;
+                    await(delay(0.01));
+                    $sharedCounter++;
+                    $sharedLog[] = "ConcTask-$i: $oldValue -> {$sharedCounter}";
 
-                $lock->release();
+                    $lock->release();
 
-                return "ConcTask-$i completed";
+                    return "ConcTask-$i completed";
+                });
             };
         }
 
@@ -147,16 +150,19 @@ describe('Promise::batch() Integration', function () {
 
         for ($i = 1; $i <= 5; $i++) {
             $tasks[] = function () use ($mutex, &$sharedCounter, &$sharedLog, $i) {
-                $lock = await($mutex->acquire());
+                // Return a promise directly without wrapping in async again
+                return async(function () use ($mutex, &$sharedCounter, &$sharedLog, $i) {
+                    $lock = await($mutex->acquire());
 
-                $oldValue = $sharedCounter;
-                await(delay(0.01));
-                $sharedCounter++;
-                $sharedLog[] = "BatchTask-$i: $oldValue -> {$sharedCounter}";
+                    $oldValue = $sharedCounter;
+                    await(delay(0.01));
+                    $sharedCounter++;
+                    $sharedLog[] = "BatchTask-$i: $oldValue -> {$sharedCounter}";
 
-                $lock->release();
+                    $lock->release();
 
-                return "BatchTask-$i done";
+                    return "BatchTask-$i done";
+                });
             };
         }
 

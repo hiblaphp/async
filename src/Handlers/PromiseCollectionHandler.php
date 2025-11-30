@@ -53,7 +53,6 @@ final readonly class PromiseCollectionHandler
                     return;
                 }
 
-                // Use original key if preserving keys, otherwise use sequential position
                 $resultIndex = $shouldPreserveKeys ? $index : array_search($index, $originalKeys, true);
 
                 $promise
@@ -115,7 +114,6 @@ final readonly class PromiseCollectionHandler
             $total = \count($promises);
 
             foreach ($promises as $index => $promise) {
-                // Use original key if preserving keys, otherwise use sequential position
                 $resultIndex = $shouldPreserveKeys ? $index : array_search($index, $originalKeys, true);
 
                 if (! ($promise instanceof PromiseInterface)) {
@@ -123,7 +121,7 @@ final readonly class PromiseCollectionHandler
                         $results[$index] = [
                             'status' => 'rejected',
                             'reason' => new InvalidArgumentException(
-                                sprintf(
+                                \sprintf(
                                     'Item at index "%s" must be a PromiseInterface, %s given',
                                     $index,
                                     get_debug_type($promise)
@@ -134,7 +132,7 @@ final readonly class PromiseCollectionHandler
                         $results[$resultIndex] = [
                             'status' => 'rejected',
                             'reason' => new InvalidArgumentException(
-                                sprintf(
+                                \sprintf(
                                     'Item at index "%s" must be a PromiseInterface, %s given',
                                     $index,
                                     get_debug_type($promise)
@@ -386,7 +384,6 @@ final readonly class PromiseCollectionHandler
         callable $reject
     ): bool {
         if (! ($promise instanceof PromiseInterface)) {
-            // Cancel any promises already added
             foreach ($promiseInstances as $p) {
                 $this->cancelPromiseIfPossible($p);
             }

@@ -76,7 +76,8 @@ final readonly class AwaitHandler
             ->catch(function ($reason) use (&$error, &$completed) {
                 $error = $reason;
                 $completed = true;
-            });
+            })
+        ;
 
         // Suspend the fiber until the promise completes
         while (! $completed) {

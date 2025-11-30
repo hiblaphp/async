@@ -103,24 +103,23 @@ describe('Promise::concurrent() with Mutex', function () {
         $sharedCounter = 0;
         $sharedLog = [];
 
-        $protectedWork = function (string $taskName) use ($mutex, &$sharedCounter, &$sharedLog) {
-            return function () use ($taskName, $mutex, &$sharedCounter, &$sharedLog) {
-                $lock = await($mutex->acquire());
-
-                $oldValue = $sharedCounter;
-                await(delay(0.02));
-                $sharedCounter++;
-                $sharedLog[] = "$taskName: $oldValue -> {$sharedCounter}";
-
-                $lock->release();
-
-                return "$taskName completed (result: {$sharedCounter})";
-            };
-        };
-
         $tasks = [];
         for ($i = 1; $i <= 8; $i++) {
-            $tasks[] = $protectedWork("Concurrent-$i");
+            // ✅ FIX: Return a callable that returns a Promise
+            $tasks[] = function () use ($i, $mutex, &$sharedCounter, &$sharedLog) {
+                return async(function () use ($i, $mutex, &$sharedCounter, &$sharedLog) {
+                    $lock = await($mutex->acquire());
+
+                    $oldValue = $sharedCounter;
+                    await(delay(0.02));
+                    $sharedCounter++;
+                    $sharedLog[] = "Concurrent-$i: $oldValue -> {$sharedCounter}";
+
+                    $lock->release();
+
+                    return "Concurrent-$i completed (result: {$sharedCounter})";
+                });
+            };
         }
 
         $results = await(concurrent($tasks, 3));
@@ -142,24 +141,23 @@ describe('Promise::batch() with Mutex', function () {
         $sharedCounter = 0;
         $sharedLog = [];
 
-        $protectedWork = function (string $taskName) use ($mutex, &$sharedCounter, &$sharedLog) {
-            return function () use ($taskName, $mutex, &$sharedCounter, &$sharedLog) {
-                $lock = await($mutex->acquire());
-
-                $oldValue = $sharedCounter;
-                await(delay(0.02));
-                $sharedCounter++;
-                $sharedLog[] = "$taskName: $oldValue -> {$sharedCounter}";
-
-                $lock->release();
-
-                return "$taskName completed (result: {$sharedCounter})";
-            };
-        };
-
         $tasks = [];
         for ($i = 1; $i <= 6; $i++) {
-            $tasks[] = $protectedWork("Batch-$i");
+            // ✅ FIX: Return a callable that returns a Promise
+            $tasks[] = function () use ($i, $mutex, &$sharedCounter, &$sharedLog) {
+                return async(function () use ($i, $mutex, &$sharedCounter, &$sharedLog) {
+                    $lock = await($mutex->acquire());
+
+                    $oldValue = $sharedCounter;
+                    await(delay(0.02));
+                    $sharedCounter++;
+                    $sharedLog[] = "Batch-$i: $oldValue -> {$sharedCounter}";
+
+                    $lock->release();
+
+                    return "Batch-$i completed (result: {$sharedCounter})";
+                });
+            };
         }
 
         $results = await(batch($tasks, 3, 2));
@@ -255,17 +253,16 @@ describe('Timeout with Mutex', function () {
         expect(function () use ($mutex, &$timeoutCounter) {
             $timeoutTask = async(function () use ($mutex, &$timeoutCounter) {
                 $lock = await($mutex->acquire());
-                await(delay(1.0)); // Long operation
+                await(delay(1.0));
                 $timeoutCounter++;
                 $lock->release();
 
                 return 'Should not complete';
             });
 
-            await(timeout($timeoutTask, 0.1)); // 100ms timeout
+            await(timeout($timeoutTask, 0.1));
         })->toThrow(Exception::class);
 
-        // The counter might be incremented depending on timing
         expect($timeoutCounter)->toBeLessThanOrEqual(1);
     });
 });

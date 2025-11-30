@@ -1,12 +1,14 @@
 <?php
 
+use Hibla\Promise\Promise;
+
 describe('ConcurrencyHandler', function () {
     it('runs tasks concurrently', function () {
         $handler = concurrencyHandler();
         $tasks = [
-            fn () => 'result1',
-            fn () => 'result2',
-            fn () => 'result3',
+            fn () => Promise::resolved('result1'),
+            fn () => Promise::resolved('result2'),
+            fn () => Promise::resolved('result3'),
         ];
 
         $promise = $handler->concurrent($tasks, 2);
@@ -23,10 +25,12 @@ describe('ConcurrencyHandler', function () {
         $tasks = array_fill(0, 5, function () use (&$counter, &$maxConcurrent) {
             $counter++;
             $maxConcurrent = max($maxConcurrent, $counter);
-            usleep(10000); // 10ms
-            $counter--;
 
-            return 'done';
+            return new Promise(function ($resolve) use (&$counter) {
+                usleep(10000);
+                $counter--;
+                $resolve('done');
+            });
         });
 
         $promise = $handler->concurrent($tasks, 2);
@@ -46,8 +50,8 @@ describe('ConcurrencyHandler', function () {
     it('preserves array keys', function () {
         $handler = concurrencyHandler();
         $tasks = [
-            'task1' => fn () => 'result1',
-            'task2' => fn () => 'result2',
+            'task1' => fn () => Promise::resolved('result1'),
+            'task2' => fn () => Promise::resolved('result2'),
         ];
 
         $promise = $handler->concurrent($tasks);
@@ -62,8 +66,8 @@ describe('ConcurrencyHandler', function () {
     it('handles task exceptions', function () {
         $handler = concurrencyHandler();
         $tasks = [
-            fn () => 'success',
-            fn () => throw new Exception('task failed'),
+            fn () => Promise::resolved('success'),
+            fn () => Promise::rejected(new Exception('task failed')),
         ];
 
         $promise = $handler->concurrent($tasks);
@@ -75,7 +79,7 @@ describe('ConcurrencyHandler', function () {
 
     it('runs batch processing', function () {
         $handler = concurrencyHandler();
-        $tasks = array_fill(0, 5, fn () => 'result');
+        $tasks = array_fill(0, 5, fn () => Promise::resolved('result'));
 
         $promise = $handler->batch($tasks, 2);
         $results = waitForPromise($promise);
@@ -87,9 +91,9 @@ describe('ConcurrencyHandler', function () {
     it('handles concurrent settled operations', function () {
         $handler = concurrencyHandler();
         $tasks = [
-            fn () => 'success',
-            fn () => throw new Exception('failure'),
-            fn () => 'another success',
+            fn () => Promise::resolved('success'),
+            fn () => Promise::rejected(new Exception('failure')),
+            fn () => Promise::resolved('another success'),
         ];
 
         $promise = $handler->concurrentSettled($tasks);

@@ -1,7 +1,6 @@
 <?php
 
 use Hibla\Async\AsyncOperations;
-use Hibla\Async\Exceptions\AggregateErrorException;
 use Hibla\Async\Exceptions\TimeoutException;
 use Hibla\Promise\Promise;
 
@@ -51,11 +50,9 @@ describe('Error Handling', function () {
         $async = new AsyncOperations();
 
         $tasks = [
-            'success' => fn () => 'success',
-            'error' => function () {
-                throw new RuntimeException('Concurrent error');
-            },
-            'another_success' => fn () => 'another success',
+            'success' => fn () => Promise::resolved('success'),
+            'error' => fn () => Promise::rejected(new RuntimeException('Concurrent error')),
+            'another_success' => fn () => Promise::resolved('another success'),
         ];
 
         $promise = $async->concurrent($tasks);
@@ -69,11 +66,9 @@ describe('Error Handling', function () {
         $async = new AsyncOperations();
 
         $tasks = [
-            'success' => fn () => 'success result',
-            'error' => function () {
-                throw new RuntimeException('Task error');
-            },
-            'another_success' => fn () => 'another result',
+            'success' => fn () => Promise::resolved('success result'),
+            'error' => fn () => Promise::rejected(new RuntimeException('Task error')),
+            'another_success' => fn () => Promise::resolved('another result'),
         ];
 
         $promise = $async->concurrentSettled($tasks);
@@ -103,10 +98,8 @@ describe('Error Handling', function () {
         $tasks = [];
         for ($i = 0; $i < 5; $i++) {
             $tasks[] = $i === 2
-                ? function () {
-                    throw new RuntimeException('Batch error');
-                }
-            : fn () => "result $i";
+                ? fn () => Promise::rejected(new RuntimeException('Batch error'))
+                : fn () => Promise::resolved("result $i");
         }
 
         $promise = $async->batch($tasks, 2);
@@ -122,10 +115,8 @@ describe('Error Handling', function () {
         $tasks = [];
         for ($i = 0; $i < 5; $i++) {
             $tasks[] = $i === 2
-                ? function () use ($i) {
-                    throw new RuntimeException("Error $i");
-                }
-            : fn () => "result $i";
+                ? fn () => Promise::rejected(new RuntimeException("Error $i"))
+                : fn () => Promise::resolved("result $i");
         }
 
         $promise = $async->batchSettled($tasks, 2);
@@ -133,13 +124,11 @@ describe('Error Handling', function () {
 
         expect($results)->toHaveCount(5);
 
-        // Check successful results
         foreach ([0, 1, 3, 4] as $index) {
             expect($results[$index]['status'])->toBe('fulfilled');
             expect($results[$index]['value'])->toBe("result $index");
         }
 
-        // Check error result
         expect($results[2]['status'])->toBe('rejected');
         expect($results[2]['reason'])->toBeInstanceOf(RuntimeException::class);
         expect($results[2]['reason']->getMessage())->toBe('Error 2');
@@ -163,21 +152,15 @@ describe('Error Handling', function () {
         $async = new AsyncOperations();
 
         $tasks = [
-            'fast_success' => fn () => 'fast',
-            'slow_success' => function () use ($async) {
-                return $async->await($async->delay(0.1)->then(fn () => 'slow'));
-            },
-            'fast_error' => function () {
-                throw new RuntimeException('Fast error');
-            },
+            'fast_success' => fn () => Promise::resolved('fast'),
+            'slow_success' => fn () => $async->delay(0.1)->then(fn () => 'slow'),
+            'fast_error' => fn () => Promise::rejected(new RuntimeException('Fast error')),
         ];
 
-        // Test that concurrent fails fast on first error
         expect(fn () => waitForPromise($async->concurrent($tasks)))
             ->toThrow(RuntimeException::class, 'Fast error')
         ;
 
-        // Test that concurrentSettled waits for all
         $settledResults = waitForPromise($async->concurrentSettled($tasks));
         expect($settledResults)->toHaveKey('fast_success');
         expect($settledResults)->toHaveKey('slow_success');
@@ -195,7 +178,6 @@ describe('Error Handling', function () {
 
         $fastError = Promise::rejected(new RuntimeException('Fast error'));
 
-        // Race should cancel the long-running task when error occurs
         $racePromise = $async->race([$longRunningTask, $fastError]);
 
         expect(fn () => waitForPromise($racePromise))
