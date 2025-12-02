@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use function Hibla\async;
 use function Hibla\asyncFn;
 use function Hibla\await;

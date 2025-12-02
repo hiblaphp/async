@@ -1,9 +1,13 @@
 <?php
 
-use Hibla\Promise\Promise;
+declare(strict_types=1);
+
 use function Hibla\async;
 use function Hibla\asyncFn;
 use function Hibla\await;
+
+use Hibla\Promise\Promise;
+
 use function Hibla\sleep;
 
 describe('Async Suspension and Concurrency', function () {
@@ -16,6 +20,7 @@ describe('Async Suspension and Concurrency', function () {
             $results[] = 'Task 1 started';
             sleep(1.0);
             $results[] = 'Task 1 completed';
+
             return 'Result 1';
         });
 
@@ -23,6 +28,7 @@ describe('Async Suspension and Concurrency', function () {
             $results[] = 'Task 2 started';
             sleep(1.0);
             $results[] = 'Task 2 completed';
+
             return 'Result 2';
         });
 
@@ -30,6 +36,7 @@ describe('Async Suspension and Concurrency', function () {
             $results[] = 'Task 3 started';
             sleep(1.0);
             $results[] = 'Task 3 completed';
+
             return 'Result 3';
         });
 
@@ -43,7 +50,8 @@ describe('Async Suspension and Concurrency', function () {
         $duration = $endTime - $startTime;
 
         expect($duration)->toBeLessThan(1.5)
-            ->and($duration)->toBeGreaterThan(0.9);
+            ->and($duration)->toBeGreaterThan(0.9)
+        ;
 
         expect($allResults)->toBe([
             'first' => 'Result 1',
@@ -56,7 +64,8 @@ describe('Async Suspension and Concurrency', function () {
             ->and($results)->toContain('Task 3 started')
             ->and($results)->toContain('Task 1 completed')
             ->and($results)->toContain('Task 2 completed')
-            ->and($results)->toContain('Task 3 completed');
+            ->and($results)->toContain('Task 3 completed')
+        ;
     });
 
     it('suspends fiber execution and allows other fibers to run', function () {
@@ -68,6 +77,7 @@ describe('Async Suspension and Concurrency', function () {
             $executionOrder[] = 'A2';
             sleep(0.2);
             $executionOrder[] = 'A3';
+
             return 'A';
         });
 
@@ -77,6 +87,7 @@ describe('Async Suspension and Concurrency', function () {
             $executionOrder[] = 'B2';
             sleep(0.15);
             $executionOrder[] = 'B3';
+
             return 'B';
         });
 
@@ -93,7 +104,8 @@ describe('Async Suspension and Concurrency', function () {
             ->and($firstAIndex)->not->toBeFalse()
             ->and($firstBIndex)->not->toBeFalse()
             ->and($secondAIndex)->not->toBeFalse()
-            ->and($secondBIndex)->not->toBeFalse();
+            ->and($secondBIndex)->not->toBeFalse()
+        ;
 
         $aIndices = [
             array_search('A1', $executionOrder),
@@ -110,6 +122,7 @@ describe('Async Suspension and Concurrency', function () {
         foreach ($bIndices as $bIndex) {
             if ($bIndex > $aIndices[0] && $bIndex < $aIndices[2]) {
                 $isInterleaved = true;
+
                 break;
             }
         }
@@ -121,9 +134,9 @@ describe('Async Suspension and Concurrency', function () {
         $concurrentStart = microtime(true);
 
         $promises = [
-            async(fn() => sleep(0.5)),
-            async(fn() => sleep(0.5)),
-            async(fn() => sleep(0.5)),
+            async(fn () => sleep(0.5)),
+            async(fn () => sleep(0.5)),
+            async(fn () => sleep(0.5)),
         ];
 
         await(Promise::all($promises));
@@ -137,7 +150,8 @@ describe('Async Suspension and Concurrency', function () {
 
         expect($concurrentDuration)->toBeLessThan(0.8)
             ->and($sequentialDuration)->toBeGreaterThan(1.4)
-            ->and($sequentialDuration)->toBeGreaterThan($concurrentDuration * 2.5);
+            ->and($sequentialDuration)->toBeGreaterThan($concurrentDuration * 2.5)
+        ;
     });
 
     it('handles nested async operations with proper suspension', function () {
@@ -150,6 +164,7 @@ describe('Async Suspension and Concurrency', function () {
                 $timeline[] = ['event' => 'inner_start', 'time' => microtime(true)];
                 sleep(0.3);
                 $timeline[] = ['event' => 'inner_end', 'time' => microtime(true)];
+
                 return 'inner_result';
             });
 
@@ -166,14 +181,16 @@ describe('Async Suspension and Concurrency', function () {
         $result = await($promise);
 
         expect($result)->toBe('inner_result_outer')
-            ->and($timeline)->toHaveCount(6);
+            ->and($timeline)->toHaveCount(6)
+        ;
 
         $startTime = $timeline[0]['time'];
         $endTime = $timeline[5]['time'];
         $totalDuration = $endTime - $startTime;
 
         expect($totalDuration)->toBeGreaterThan(0.4)
-            ->and($totalDuration)->toBeLessThan(0.7);
+            ->and($totalDuration)->toBeLessThan(0.7)
+        ;
     });
 
     it('allows other tasks to execute during await suspension', function () {
@@ -184,6 +201,7 @@ describe('Async Suspension and Concurrency', function () {
             $executionLog[] = ['task' => 'long', 'event' => 'start', 'offset' => microtime(true) - $startTime];
             sleep(1.0);
             $executionLog[] = ['task' => 'long', 'event' => 'end', 'offset' => microtime(true) - $startTime];
+
             return 'long_done';
         });
 
@@ -191,6 +209,7 @@ describe('Async Suspension and Concurrency', function () {
             $executionLog[] = ['task' => 'quick1', 'event' => 'start', 'offset' => microtime(true) - $startTime];
             sleep(0.2);
             $executionLog[] = ['task' => 'quick1', 'event' => 'end', 'offset' => microtime(true) - $startTime];
+
             return 'quick1_done';
         });
 
@@ -198,6 +217,7 @@ describe('Async Suspension and Concurrency', function () {
             $executionLog[] = ['task' => 'quick2', 'event' => 'start', 'offset' => microtime(true) - $startTime];
             sleep(0.3);
             $executionLog[] = ['task' => 'quick2', 'event' => 'end', 'offset' => microtime(true) - $startTime];
+
             return 'quick2_done';
         });
 
@@ -216,14 +236,15 @@ describe('Async Suspension and Concurrency', function () {
         $tasks = array_column($executionLog, 'task');
         expect($tasks)->toContain('long')
             ->and($tasks)->toContain('quick1')
-            ->and($tasks)->toContain('quick2');
+            ->and($tasks)->toContain('quick2')
+        ;
 
         $quick1EndIndex = array_search(['task' => 'quick1', 'event' => 'end'], array_map(
-            fn($log) => ['task' => $log['task'], 'event' => $log['event']],
+            fn ($log) => ['task' => $log['task'], 'event' => $log['event']],
             $executionLog
         ));
         $longEndIndex = array_search(['task' => 'long', 'event' => 'end'], array_map(
-            fn($log) => ['task' => $log['task'], 'event' => $log['event']],
+            fn ($log) => ['task' => $log['task'], 'event' => $log['event']],
             $executionLog
         ));
 
@@ -257,16 +278,20 @@ describe('Async Suspension and Concurrency', function () {
         $overallDuration = microtime(true) - $overallStart;
 
         expect($overallDuration)->toBeGreaterThan(0.65)
-            ->and($overallDuration)->toBeLessThan(0.85);
+            ->and($overallDuration)->toBeLessThan(0.85)
+        ;
 
         expect($timings['task_500ms']['duration'])->toBeGreaterThan(0.45)
-            ->and($timings['task_500ms']['duration'])->toBeLessThan(0.65);
+            ->and($timings['task_500ms']['duration'])->toBeLessThan(0.65)
+        ;
 
         expect($timings['task_300ms']['duration'])->toBeGreaterThan(0.25)
-            ->and($timings['task_300ms']['duration'])->toBeLessThan(0.45);
+            ->and($timings['task_300ms']['duration'])->toBeLessThan(0.45)
+        ;
 
         expect($timings['task_700ms']['duration'])->toBeGreaterThan(0.65)
-            ->and($timings['task_700ms']['duration'])->toBeLessThan(0.85);
+            ->and($timings['task_700ms']['duration'])->toBeLessThan(0.85)
+        ;
 
         expect($results)->toHaveCount(3);
     });

@@ -1,18 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 use function Hibla\async;
 use function Hibla\await;
 use function Hibla\sleep;
 
 describe('Error Handling', function () {
-    
+
     it('throws exception from async function', function () {
         $promise = async(function () {
             throw new RuntimeException('Test error');
         });
-        
-        expect(fn() => await($promise))
-            ->toThrow(RuntimeException::class, 'Test error');
+
+        expect(fn () => await($promise))
+            ->toThrow(RuntimeException::class, 'Test error')
+        ;
     });
 
     it('catches exception using promise catch', function () {
@@ -35,7 +38,8 @@ describe('Error Handling', function () {
         }
 
         expect($caught)->toBeTrue()
-            ->and($errorMessage)->toBe('Async error');
+            ->and($errorMessage)->toBe('Async error')
+        ;
     });
 
     it('propagates exception through nested async calls', function () {
@@ -45,8 +49,9 @@ describe('Error Handling', function () {
             }));
         });
 
-        expect(fn() => await($promise))
-            ->toThrow(Exception::class, 'Nested error');
+        expect(fn () => await($promise))
+            ->toThrow(Exception::class, 'Nested error')
+        ;
     });
 
     it('handles exception after successful operations', function () {
@@ -55,12 +60,14 @@ describe('Error Handling', function () {
         $promise = async(function () use (&$executed) {
             sleep(0.1);
             $executed = true;
+
             throw new RuntimeException('Error after sleep');
         });
 
-        expect(fn() => await($promise))
-            ->toThrow(RuntimeException::class, 'Error after sleep');
-        
+        expect(fn () => await($promise))
+            ->toThrow(RuntimeException::class, 'Error after sleep')
+        ;
+
         expect($executed)->toBeTrue();
     });
 
@@ -71,11 +78,13 @@ describe('Error Handling', function () {
 
         $promise1 = async(function () {
             sleep(0.1);
+
             throw new RuntimeException('Task 1 failed');
         });
 
         $promise2 = async(function () {
             sleep(0.2);
+
             return 'Task 2 completed';
         });
 
@@ -92,7 +101,8 @@ describe('Error Handling', function () {
 
         expect($error)->toBe('Task 1 failed')
             ->and($result2)->toBe('Task 2 completed')
-            ->and($result)->toBe('Task 2 completed');
+            ->and($result)->toBe('Task 2 completed')
+        ;
     });
 
     it('handles exception in promise then callback', function () {
@@ -108,7 +118,8 @@ describe('Error Handling', function () {
             })
             ->catch(function (Throwable $e) use (&$caught) {
                 $caught = true;
-            });
+            })
+        ;
 
         try {
             await($chainedPromise);
@@ -128,8 +139,9 @@ describe('Error Handling', function () {
             return await($innerPromise);
         });
 
-        expect(fn() => await($promise))
-            ->toThrow(Exception::class, 'Inner rejection');
+        expect(fn () => await($promise))
+            ->toThrow(Exception::class, 'Inner rejection')
+        ;
     });
 
     it('handles multiple sequential errors', function () {
@@ -158,18 +170,22 @@ describe('Error Handling', function () {
         $result = await($task);
 
         expect($errors)->toBe(['Error 1', 'Error 2'])
-            ->and($result)->toBe('completed');
+            ->and($result)->toBe('completed')
+        ;
     });
 
     it('handles exception with custom exception types', function () {
-        class CustomException extends Exception {}
+        class CustomException extends Exception
+        {
+        }
 
         $promise = async(function () {
             throw new CustomException('Custom error');
         });
 
-        expect(fn() => await($promise))
-            ->toThrow(CustomException::class, 'Custom error');
+        expect(fn () => await($promise))
+            ->toThrow(CustomException::class, 'Custom error')
+        ;
     });
 
     it('preserves exception stack trace', function () {
@@ -190,7 +206,8 @@ describe('Error Handling', function () {
         }
 
         expect($exception)->toBeInstanceOf(RuntimeException::class)
-            ->and($exception->getTrace())->not->toBeEmpty();
+            ->and($exception->getTrace())->not->toBeEmpty()
+        ;
     });
 
     it('handles error in await outside fiber context', function () {
@@ -199,22 +216,24 @@ describe('Error Handling', function () {
         });
 
         // Await outside fiber should still throw
-        expect(fn() => await($promise))
-            ->toThrow(RuntimeException::class, 'Non-fiber error');
+        expect(fn () => await($promise))
+            ->toThrow(RuntimeException::class, 'Non-fiber error')
+        ;
     });
 
     it('handles promise rejection with non-exception values', function () {
         $promise = async(function () {
             // Simulate manual promise rejection with string
             return await(
-                (new \Hibla\Promise\Promise(function ($resolve, $reject) {
+                (new Hibla\Promise\Promise(function ($resolve, $reject) {
                     $reject('String error message');
                 }))
             );
         });
 
-        expect(fn() => await($promise))
-            ->toThrow(Exception::class);
+        expect(fn () => await($promise))
+            ->toThrow(Exception::class)
+        ;
     });
 
     it('chains multiple error handlers', function () {
@@ -228,11 +247,13 @@ describe('Error Handling', function () {
         $chainedPromise = $promise
             ->catch(function (Throwable $e) use (&$handler1Called) {
                 $handler1Called = true;
+
                 throw $e; // Re-throw to next handler
             })
             ->catch(function (Throwable $e) use (&$handler2Called) {
                 $handler2Called = true;
-            });
+            })
+        ;
 
         try {
             await($chainedPromise);
@@ -241,7 +262,8 @@ describe('Error Handling', function () {
         }
 
         expect($handler1Called)->toBeTrue()
-            ->and($handler2Called)->toBeTrue();
+            ->and($handler2Called)->toBeTrue()
+        ;
     });
 
     it('handles timeout-like scenarios with errors', function () {
@@ -250,6 +272,7 @@ describe('Error Handling', function () {
         $promise = async(function () use (&$timedOut) {
             sleep(0.5);
             $timedOut = true;
+
             throw new RuntimeException('Operation timed out');
         });
 
@@ -290,13 +313,14 @@ describe('Error Handling', function () {
         for ($i = 1; $i <= 3; $i++) {
             $promise = async(function () use ($i) {
                 sleep(0.1 * $i);
+
                 throw new RuntimeException("Task $i failed");
             });
-            
+
             $promise->catch(function (Throwable $e) use (&$errors) {
                 $errors[] = $e->getMessage();
             });
-            
+
             $promises[] = $promise;
         }
 
@@ -310,7 +334,8 @@ describe('Error Handling', function () {
         }
 
         expect($errors)->toHaveCount(3)
-            ->and($errors)->toContain('Task 1 failed', 'Task 2 failed', 'Task 3 failed');
+            ->and($errors)->toContain('Task 1 failed', 'Task 2 failed', 'Task 3 failed')
+        ;
     });
 
     it('handles error thrown before any async operation', function () {
@@ -318,8 +343,9 @@ describe('Error Handling', function () {
             throw new RuntimeException('Immediate error');
         });
 
-        expect(fn() => await($promise))
-            ->toThrow(RuntimeException::class, 'Immediate error');
+        expect(fn () => await($promise))
+            ->toThrow(RuntimeException::class, 'Immediate error')
+        ;
     });
 
     it('handles error in deeply nested async calls', function () {
@@ -333,8 +359,9 @@ describe('Error Handling', function () {
             }));
         });
 
-        expect(fn() => await($promise))
-            ->toThrow(Exception::class, 'Deep nested error');
+        expect(fn () => await($promise))
+            ->toThrow(Exception::class, 'Deep nested error')
+        ;
     });
 
     it('allows finally-like cleanup after error', function () {
