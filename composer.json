@@ -23,6 +23,7 @@
     ],
     "require": {
         "php": "^8.2",
+        "hiblaphp/event-loop": "dev-main",
         "hiblaphp/promise": "dev-main"
     },
     "require-dev": {
