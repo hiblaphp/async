@@ -256,7 +256,7 @@ describe('Promise Static Methods Integration', function () {
                 return $value;
             });
 
-            $delayedPromise = async(asyncFunction: function () use (&$completed) {
+            $delayedPromise = async(function () use (&$completed) {
                 await(delay(0.1));
                 $completed[] = 'delayed-async';
 

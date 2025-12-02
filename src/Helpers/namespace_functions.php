@@ -24,7 +24,7 @@ function inFiber(): bool
  *
  * @template TReturn The return type of the async function
  *
- * @param  callable(): TReturn  $asyncFunction  The function to convert to async
+ * @param  callable(): TReturn  $function  The function to convert to async
  * @return PromiseInterface<TReturn> A promise that resolves to the return value
  *
  * ```php
@@ -34,7 +34,7 @@ function inFiber(): bool
  * });
  * ```
  */
-function async(callable $asyncFunction): PromiseInterface
+function async(callable $function): PromiseInterface
 {
     /** @var AsyncExecutionHandler|null $handler */
     static $handler = null;
@@ -43,7 +43,7 @@ function async(callable $asyncFunction): PromiseInterface
         $handler = new AsyncExecutionHandler();
     }
 
-    return $handler->async($asyncFunction);
+    return $handler->async($function);
 }
 
 /**
