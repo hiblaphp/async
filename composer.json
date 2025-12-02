@@ -8,7 +8,6 @@
             "Hibla\\Async\\": "src/"
         },
         "files": [
-            "src/Helpers/global_functions.php",
             "src/Helpers/namespace_functions.php"
         ]
     },
