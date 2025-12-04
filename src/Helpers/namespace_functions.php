@@ -22,17 +22,43 @@ function inFiber(): bool
 /**
  * Convert a regular function into an async function that returns a Promise.
  *
+ * This wraps the callable in a Fiber, allowing it to use `await()` for non-blocking
+ * asynchronous operations. The function executes immediately and returns a Promise
+ * that resolves to the function's return value.
+ *
+ * **Performance Note:** Each `async()` call creates a new Fiber. Avoid unnecessary
+ * wrapping when you're only awaiting a single promise:
+ *
+ * ```php
+ * // ✗ Unnecessary - creates extra fiber overhead
+ * $result = await(async(function() {
+ *     return await($somePromise);
+ * }));
+ *
+ * // ✓ Better - await the promise directly
+ * $result = await($somePromise);
+ * ```
+ *
+ * Use `async()` when you need to:
+ * - Await multiple promises sequentially
+ * - Perform operations between awaits
+ * - Create reusable async workflows
+ *
+ * ```php
+ * // ✓ Good use - multiple awaits and logic
+ * $promise = async(function() {
+ *     $user = await(fetchUser(1));
+ *     $posts = await(fetchPosts($user->id));
+ *     $comments = await(fetchComments($posts));
+ *     $ratings = await(fetchRatings($user->id));
+ *     return processData($user, $posts, $comments, $ratings);
+ * });
+ * ```
+ *
  * @template TReturn The return type of the async function
  *
  * @param  callable(): TReturn  $function  The function to convert to async
  * @return PromiseInterface<TReturn> A promise that resolves to the return value
- *
- * ```php
- * $promise = async(function() {
- *     $result = await(delay(1));
- *     return $result;
- * });
- * ```
  */
 function async(callable $function): PromiseInterface
 {

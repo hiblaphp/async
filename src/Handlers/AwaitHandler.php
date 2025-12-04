@@ -20,14 +20,14 @@ final readonly class AwaitHandler
      */
     public function await(PromiseInterface $promise): mixed
     {
-        // If we are not in a fiber context, use the blocking await.
-        if (Fiber::getCurrent() === null) {
+        $fiber = Fiber::getCurrent();
+
+        if ($fiber === null) {
             return $promise->await(false);
         }
 
         $result = null;
         $error = null;
-        $fiber = Fiber::getCurrent();
 
         $promise
             ->then(function ($value) use (&$result, $fiber) {
