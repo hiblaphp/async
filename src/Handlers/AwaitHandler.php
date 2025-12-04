@@ -32,14 +32,14 @@ final readonly class AwaitHandler
         $promise
             ->then(function ($value) use (&$result, $fiber) {
                 $result = $value;
-    
                 Loop::scheduleFiber($fiber);
-                
+
                 return $value;
             })
             ->catch(function ($reason) use (&$error, $fiber) {
                 $error = $reason;
                 Loop::scheduleFiber($fiber);
+
                 return $reason;
             })
         ;
