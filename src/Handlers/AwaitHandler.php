@@ -6,6 +6,7 @@ namespace Hibla\Async\Handlers;
 
 use Exception;
 use Fiber;
+use Hibla\EventLoop\Loop;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Throwable;
 
@@ -19,30 +20,31 @@ final readonly class AwaitHandler
      */
     public function await(PromiseInterface $promise): mixed
     {
-        // If not in a Fiber context, use the Promise's own await method
+        // If we are not in a fiber context, use the blocking await.
         if (Fiber::getCurrent() === null) {
             return $promise->await(false);
         }
 
         $result = null;
         $error = null;
-        $completed = false;
+        $fiber = Fiber::getCurrent();
 
         $promise
-            ->then(function ($value) use (&$result, &$completed) {
+            ->then(function ($value) use (&$result, $fiber) {
                 $result = $value;
-                $completed = true;
+    
+                Loop::scheduleFiber($fiber);
+                
+                return $value;
             })
-            ->catch(function ($reason) use (&$error, &$completed) {
+            ->catch(function ($reason) use (&$error, $fiber) {
                 $error = $reason;
-                $completed = true;
+                Loop::scheduleFiber($fiber);
+                return $reason;
             })
         ;
 
-        // Suspend the fiber until the promise completes
-        while (! $completed) {
-            Fiber::suspend();
-        }
+        Fiber::suspend();
 
         if ($error !== null) {
             $errorMessage = match (true) {
