@@ -23,7 +23,7 @@ final readonly class AwaitHandler
         $fiber = Fiber::getCurrent();
 
         if ($fiber === null) {
-            return $promise->await(false);
+            return $promise->wait(false);
         }
 
         $result = null;
