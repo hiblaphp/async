@@ -7,6 +7,7 @@ namespace Hibla;
 use Fiber;
 use Hibla\Async\Handlers\AsyncExecutionHandler;
 use Hibla\Async\Handlers\AwaitHandler;
+use Hibla\Cancellation\CancellationToken;
 use Hibla\Promise\Interfaces\PromiseInterface;
 
 /**
@@ -91,14 +92,9 @@ function async(callable $function): PromiseInterface
  */
 function asyncFn(callable $function): callable
 {
-    /** @var AsyncExecutionHandler|null $handler */
-    static $handler = null;
-
-    if ($handler === null) {
-        $handler = new AsyncExecutionHandler();
-    }
-
-    return $handler->asyncFn($function);
+    return static function (mixed ...$args) use ($function): PromiseInterface {
+        return async(static fn() => $function(...$args));
+    };
 }
 
 /**
@@ -126,11 +122,12 @@ function asyncFn(callable $function): callable
  * @template TValue The expected type of the resolved value from the promise.
  *
  * @param  PromiseInterface<TValue>  $promise  The promise to await.
+ * @param  CancellationToken|null  $cancellationToken  Optional cancellation token to track promise cancellation.
  * @return TValue The resolved value of the promise.
  *
  * @throws \Exception If the promise is rejected, this method throws the rejection reason.
  */
-function await(PromiseInterface $promise): mixed
+function await(PromiseInterface $promise, ?CancellationToken $cancellationToken = null): mixed
 {
     /** @var AwaitHandler|null $handler */
     static $handler = null;
@@ -139,7 +136,7 @@ function await(PromiseInterface $promise): mixed
         $handler = new AwaitHandler();
     }
 
-    return $handler->await($promise);
+    return $handler->await($promise, $cancellationToken);
 }
 
 /**

@@ -8,7 +8,7 @@
             "Hibla\\Async\\": "src/"
         },
         "files": [
-            "src/Helpers/namespace_functions.php"
+            "src/functions.php"
         ]
     },
     "autoload-dev": {

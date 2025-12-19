@@ -21,8 +21,8 @@ final readonly class AsyncExecutionHandler
     public function async(callable $function): PromiseInterface
     {
         /** @var Promise<TReturn> $promise */
-        $promise = new Promise(function (callable $resolve, callable $reject) use ($function) {
-            $fiber = new Fiber(function () use ($function, $resolve, $reject): void {
+        $promise = new Promise(static function (callable $resolve, callable $reject) use ($function) {
+            $fiber = new Fiber(static function () use ($function, $resolve, $reject): void {
                 try {
                     $result = $function();
                     $resolve($result);
@@ -35,18 +35,5 @@ final readonly class AsyncExecutionHandler
         });
 
         return $promise;
-    }
-
-    /**
-     * @template TReturn
-     *
-     * @param  callable(): TReturn  $function
-     * @return callable(): PromiseInterface<TReturn>
-     */
-    public function asyncFn(callable $function): callable
-    {
-        return function (mixed ...$args) use ($function): PromiseInterface {
-            return $this->async(fn () => $function(...$args));
-        };
     }
 }
