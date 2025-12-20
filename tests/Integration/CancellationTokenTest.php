@@ -9,8 +9,8 @@ use Hibla\Cancellation\CancellationToken;
 use Hibla\Cancellation\CancellationTokenSource;
 use Hibla\EventLoop\Loop;
 use Hibla\Promise\Exceptions\PromiseCancelledException;
+use Hibla\Promise\Exceptions\TimeoutException;
 use Hibla\Promise\Promise;
-use Whoops\Run;
 
 describe('CancellationToken Integration Tests', function () {
     describe('Basic Cancellation', function () {
@@ -571,17 +571,18 @@ describe('CancellationToken Integration Tests', function () {
                 return 'completed';
             });
 
-            $timeout = delay(0.1)->then(function () use ($cts) {
+            $timeoutSeconds = 0.1;
+            $timeout = delay($timeoutSeconds)->then(function () use ($cts, $timeoutSeconds) {
                 $cts->cancel();
 
-                throw new RuntimeException('Timeout');
+                throw new TimeoutException($timeoutSeconds);
             });
 
             try {
                 await(Promise::race([$operation, $timeout]));
                 expect(false)->toBeTrue('Should have timed out');
-            } catch (RuntimeException $e) {
-                expect($e)->toBeInstanceOf(RuntimeException::class);
+            } catch (TimeoutException $e) {
+                expect($e->getMessage())->toBe("Operation timed out after {$timeoutSeconds} seconds");
             }
         });
 
