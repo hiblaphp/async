@@ -24,7 +24,8 @@
     "require": {
         "php": "^8.2",
         "hiblaphp/event-loop": "dev-main",
-        "hiblaphp/promise": "dev-main"
+        "hiblaphp/promise": "dev-main",
+        "hiblaphp/cancellation": "dev-main"
     },
     "require-dev": {
         "pestphp/pest": "^3.0",
