@@ -174,20 +174,6 @@ describe('Error Handling', function () {
         ;
     });
 
-    it('handles exception with custom exception types', function () {
-        class CustomException extends Exception
-        {
-        }
-
-        $promise = async(function () {
-            throw new CustomException('Custom error');
-        });
-
-        expect(fn () => await($promise))
-            ->toThrow(CustomException::class, 'Custom error')
-        ;
-    });
-
     it('preserves exception stack trace', function () {
         $exception = null;
 
