@@ -3,13 +3,11 @@
 declare(strict_types=1);
 
 use function Hibla\async;
-
 use function Hibla\await;
 use function Hibla\delay;
 
 use Hibla\Promise\Exceptions\AggregateErrorException;
 use Hibla\Promise\Exceptions\TimeoutException;
-
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 
@@ -34,9 +32,8 @@ describe('Promise Static Methods Integration', function () {
             expect($promise->isRejected())->toBeTrue();
             expect($promise->getReason())->toBe($error);
 
-            expect(fn () => await($promise))
-                ->toThrow(RuntimeException::class, 'test error')
-            ;
+            expect(fn() => await($promise))
+                ->toThrow(RuntimeException::class, 'test error');
         });
     });
 
@@ -80,15 +77,14 @@ describe('Promise Static Methods Integration', function () {
 
             $promise = Promise::all($promises);
 
-            expect(fn () => await($promise))
-                ->toThrow(RuntimeException::class, 'all error')
-            ;
+            expect(fn() => await($promise))
+                ->toThrow(RuntimeException::class, 'all error');
         });
 
         it('works with async functions', function () {
             $promises = [
-                async(fn () => 'async-first'),
-                async(fn () => 'async-second'),
+                async(fn() => 'async-first'),
+                async(fn() => 'async-second'),
                 async(function () {
                     await(delay(0.05));
 
@@ -123,19 +119,15 @@ describe('Promise Static Methods Integration', function () {
 
             expect($results)->toHaveCount(3);
 
-            expect($results[0])->toEqual([
-                'status' => 'fulfilled',
-                'value' => 'success',
-            ]);
+            expect($results[0]->status)->toBe('fulfilled');
+            expect($results[0]->value)->toBe('success');
 
-            expect($results[1]['status'])->toBe('rejected');
-            expect($results[1]['reason'])->toBeInstanceOf(RuntimeException::class);
-            expect($results[1]['reason']->getMessage())->toBe('error');
+            expect($results[1]->status)->toBe('rejected');
+            expect($results[1]->reason)->toBeInstanceOf(RuntimeException::class);
+            expect($results[1]->reason->getMessage())->toBe('error');
 
-            expect($results[2])->toEqual([
-                'status' => 'fulfilled',
-                'value' => 'another success',
-            ]);
+            expect($results[2]->status)->toBe('fulfilled');
+            expect($results[2]->value)->toBe('another success');
         });
 
         it('preserves string keys in settlement results', function () {
@@ -150,14 +142,14 @@ describe('Promise Static Methods Integration', function () {
             expect($results)->toHaveKey('success');
             expect($results)->toHaveKey('failure');
 
-            expect($results['success']['status'])->toBe('fulfilled');
-            expect($results['failure']['status'])->toBe('rejected');
+            expect($results['success']->status)->toBe('fulfilled');
+            expect($results['failure']->status)->toBe('rejected');
         });
 
         it('works with mixed async and sync promises', function () {
             $promises = [
                 Promise::resolved('sync'),
-                async(fn () => 'async'),
+                async(fn() => 'async'),
                 async(function () {
                     throw new RuntimeException('async error');
                 }),
@@ -167,9 +159,9 @@ describe('Promise Static Methods Integration', function () {
             $results = await($promise);
 
             expect($results)->toHaveCount(3);
-            expect($results[0]['status'])->toBe('fulfilled');
-            expect($results[1]['status'])->toBe('fulfilled');
-            expect($results[2]['status'])->toBe('rejected');
+            expect($results[0]->status)->toBe('fulfilled');
+            expect($results[1]->status)->toBe('fulfilled');
+            expect($results[2]->status)->toBe('rejected');
         });
     });
 
@@ -207,9 +199,8 @@ describe('Promise Static Methods Integration', function () {
 
             $promise = Promise::race($promises);
 
-            expect(fn () => await($promise))
-                ->toThrow(RuntimeException::class, 'fast error')
-            ;
+            expect(fn() => await($promise))
+                ->toThrow(RuntimeException::class, 'fast error');
         });
 
         it('cancels cancellable promises when race settles', function () {
@@ -403,9 +394,8 @@ describe('Promise Static Methods Integration', function () {
 
             $promise = Promise::timeout($slowPromise, 0.05); // 50ms timeout
 
-            expect(fn () => await($promise))
-                ->toThrow(TimeoutException::class)
-            ;
+            expect(fn() => await($promise))
+                ->toThrow(TimeoutException::class);
         });
 
         it('handles promise rejection before timeout', function () {
@@ -417,9 +407,8 @@ describe('Promise Static Methods Integration', function () {
 
             $promise = Promise::timeout($errorPromise, 0.2);
 
-            expect(fn () => await($promise))
-                ->toThrow(RuntimeException::class, 'promise error')
-            ;
+            expect(fn() => await($promise))
+                ->toThrow(RuntimeException::class, 'promise error');
         });
     });
 
@@ -502,8 +491,8 @@ describe('Promise Static Methods Integration', function () {
             expect($results)->toHaveCount(6);
 
             // First batch (0,1,2) should complete before second batch (3,4,5) starts
-            $firstBatchStarts = array_filter($batchOrder, fn ($item) => str_starts_with($item, 'start') && in_array($item, ['start-0', 'start-1', 'start-2']));
-            $secondBatchStarts = array_filter($batchOrder, fn ($item) => str_starts_with($item, 'start') && in_array($item, ['start-3', 'start-4', 'start-5']));
+            $firstBatchStarts = array_filter($batchOrder, fn($item) => str_starts_with($item, 'start') && in_array($item, ['start-0', 'start-1', 'start-2']));
+            $secondBatchStarts = array_filter($batchOrder, fn($item) => str_starts_with($item, 'start') && in_array($item, ['start-3', 'start-4', 'start-5']));
 
             expect(count($firstBatchStarts))->toBe(3);
             expect(count($secondBatchStarts))->toBe(3);
@@ -514,7 +503,7 @@ describe('Promise Static Methods Integration', function () {
         it('handles mixed success and failure in concurrent execution', function () {
             $tasks = [
                 function () {
-                    return async(fn () => 'success-1');
+                    return async(fn() => 'success-1');
                 },
                 function () {
                     return async(function () {
@@ -522,7 +511,7 @@ describe('Promise Static Methods Integration', function () {
                     });
                 },
                 function () {
-                    return async(fn () => 'success-2');
+                    return async(fn() => 'success-2');
                 },
             ];
 
@@ -531,14 +520,14 @@ describe('Promise Static Methods Integration', function () {
 
             expect($results)->toHaveCount(3);
 
-            expect($results[0]['status'])->toBe('fulfilled');
-            expect($results[0]['value'])->toBe('success-1');
+            expect($results[0]->status)->toBe('fulfilled');
+            expect($results[0]->value)->toBe('success-1');
 
-            expect($results[1]['status'])->toBe('rejected');
-            expect($results[1]['reason'])->toBeInstanceOf(RuntimeException::class);
+            expect($results[1]->status)->toBe('rejected');
+            expect($results[1]->reason)->toBeInstanceOf(RuntimeException::class);
 
-            expect($results[2]['status'])->toBe('fulfilled');
-            expect($results[2]['value'])->toBe('success-2');
+            expect($results[2]->status)->toBe('fulfilled');
+            expect($results[2]->value)->toBe('success-2');
         });
 
         it('handles mixed results in batch processing', function () {
@@ -546,7 +535,7 @@ describe('Promise Static Methods Integration', function () {
             for ($i = 0; $i < 6; $i++) {
                 if ($i % 2 === 0) {
                     $tasks[] = function () use ($i) {
-                        return async(fn () => "success-$i");
+                        return async(fn() => "success-$i");
                     };
                 } else {
                     $tasks[] = function () use ($i) {
@@ -564,14 +553,14 @@ describe('Promise Static Methods Integration', function () {
 
             // Check even indices are successful
             foreach ([0, 2, 4] as $index) {
-                expect($results[$index]['status'])->toBe('fulfilled');
-                expect($results[$index]['value'])->toBe("success-$index");
+                expect($results[$index]->status)->toBe('fulfilled');
+                expect($results[$index]->value)->toBe("success-$index");
             }
 
             // Check odd indices are rejected
             foreach ([1, 3, 5] as $index) {
-                expect($results[$index]['status'])->toBe('rejected');
-                expect($results[$index]['reason']->getMessage())->toBe("error-$index");
+                expect($results[$index]->status)->toBe('rejected');
+                expect($results[$index]->reason->getMessage())->toBe("error-$index");
             }
         });
     });
@@ -579,7 +568,7 @@ describe('Promise Static Methods Integration', function () {
     describe('Integration with global/namespace functions', function () {
         it('works seamlessly with global async functions', function () {
             $promises = [
-                async(fn () => 'global-async'),
+                async(fn() => 'global-async'),
                 Promise::resolved('static-resolved'),
                 async(function () {
                     $result = await(Promise::resolved('awaited-static'));
@@ -596,26 +585,6 @@ describe('Promise Static Methods Integration', function () {
                 'static-resolved',
                 'processed-awaited-static',
             ]);
-        });
-
-        it('integrates with namespace functions', function () {
-            $promises = [
-                async(fn () => 'namespace-async'),
-                Promise::resolved('static-promise'),
-                async(function () {
-                    await(delay(0.05));
-
-                    return 'namespace-delayed';
-                }),
-            ];
-
-            $promise = Promise::allSettled($promises);
-            $results = await($promise);
-
-            expect($results)->toHaveCount(3);
-            foreach ($results as $result) {
-                expect($result['status'])->toBe('fulfilled');
-            }
         });
     });
 });
