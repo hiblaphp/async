@@ -16,7 +16,7 @@ describe('CancellationToken Integration Tests', function () {
     describe('Basic Cancellation', function () {
         it('tracks and cancels a single promise', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $promise = $token->track(async(function () {
                 await(delay(1.0));
@@ -36,7 +36,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('cancels multiple tracked promises at once', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $promise1 = $token->track(async(fn() => await(delay(1.0))));
             $promise2 = $token->track(async(fn() => await(delay(1.0))));
@@ -54,7 +54,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('immediately cancels promises added after token is cancelled', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $cts->cancel();
 
@@ -69,7 +69,7 @@ describe('CancellationToken Integration Tests', function () {
     describe('await() with CancellationToken', function () {
         it('cancels promise using await() with token parameter', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $promise = async(function () use ($token) {
                 await(delay(1.0), $token);
@@ -109,7 +109,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('cancels multiple await() calls with same token', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $steps = [];
 
             $promise = async(function () use ($token, &$steps) {
@@ -137,7 +137,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('integrates await() cancellation with Promise::race()', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $results = async(function () use ($token) {
                 return await(Promise::race([
@@ -154,7 +154,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('cancels concurrent operations using await() with token', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $completed = [];
 
             $promise1 = $token->track(async(function () use ($token, &$completed) {
@@ -188,7 +188,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('handles mixed await() calls with and without tokens', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $steps = [];
 
             $promise = async(function () use ($token, &$steps) {
@@ -216,7 +216,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('allows reusing token after clearing cancelled state', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $promise1 = async(fn() => await(delay(0.05), $token));
             $result1 = await($promise1);
@@ -236,7 +236,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('cancels nested async operations with await() token', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $steps = [];
 
             $promise = async(function () use ($token, &$steps) {
@@ -276,7 +276,7 @@ describe('CancellationToken Integration Tests', function () {
     describe('Promise Tracking', function () {
         it('automatically untracks promises when they resolve', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $promise = $token->track(async(fn() => 'quick'));
 
@@ -290,7 +290,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('automatically untracks promises when they reject', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $promise = $token->track(async(function () {
                 throw new RuntimeException('error');
@@ -309,7 +309,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('can manually untrack a promise', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $promise = $token->track(async(fn() => await(delay(1.0))));
 
@@ -326,7 +326,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('clears all tracked promises without cancelling them', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $promise1 = $token->track(async(fn() => await(delay(1.0))));
             $promise2 = $token->track(async(fn() => await(delay(1.0))));
@@ -347,7 +347,7 @@ describe('CancellationToken Integration Tests', function () {
     describe('Cancellation Callbacks', function () {
         it('executes callback when cancelled', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $executed = false;
 
             $token->onCancel(function () use (&$executed) {
@@ -363,7 +363,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('executes multiple callbacks in order', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $order = [];
 
             $token->onCancel(function () use (&$order) {
@@ -383,7 +383,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('immediately executes callback if token already cancelled', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $cts->cancel();
 
@@ -398,7 +398,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('clears callbacks after cancellation', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $count = 0;
 
             $token->onCancel(function () use (&$count) {
@@ -416,7 +416,7 @@ describe('CancellationToken Integration Tests', function () {
     describe('throwIfCancelled()', function () {
         it('throws exception if token is cancelled', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $cts->cancel();
 
@@ -426,7 +426,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('does not throw if token is not cancelled', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $token->throwIfCancelled();
 
@@ -435,7 +435,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('can be used to check cancellation in async operations', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $steps = [];
 
             $promise = async(function () use ($token, &$steps) {
@@ -466,7 +466,7 @@ describe('CancellationToken Integration Tests', function () {
     describe('Real-world Scenarios', function () {
         it('cancels long-running operations', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $operationsCompleted = 0;
 
             $promises = [];
@@ -491,7 +491,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('handles partial completion before cancellation', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $completed = [];
 
             await(async(function () use ($cts, $token, &$completed) {
@@ -519,10 +519,10 @@ describe('CancellationToken Integration Tests', function () {
 
         it('supports cascading cancellation', function () {
             $parentCts = new CancellationTokenSource();
-            $parentToken = $parentCts->token();
+            $parentToken = $parentCts->token;
 
             $childCts = new CancellationTokenSource();
-            $childToken = $childCts->token();
+            $childToken = $childCts->token;
 
             $parentToken->onCancel(fn() => $childCts->cancel());
 
@@ -538,7 +538,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('integrates with Promise::race() for timeout pattern', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $operation = $token->track(async(function () {
                 await(delay(1.0));
@@ -563,7 +563,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('implements timeout pattern using await() with token', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $operation = async(function () use ($token) {
                 await(delay(1.0), $token);
@@ -588,7 +588,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('allows resource cleanup on cancellation', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $resourceReleased = false;
 
             $token->onCancel(function () use (&$resourceReleased) {
@@ -605,7 +605,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('handles complex workflow cancellation', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $workflow = [];
 
             $promise = async(function () use ($token, &$workflow) {
@@ -636,7 +636,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('handles complex workflow with await() token parameter', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $workflow = [];
 
             $promise = async(function () use ($token, &$workflow) {
@@ -669,7 +669,7 @@ describe('CancellationToken Integration Tests', function () {
     describe('Edge Cases', function () {
         it('handles double cancellation gracefully', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $cancelCount = 0;
 
             $token->onCancel(function () use (&$cancelCount) {
@@ -685,7 +685,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('does not cancel already settled promises', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $resolved = Promise::resolved('value');
             $rejected = Promise::rejected(new RuntimeException('error'));
@@ -704,7 +704,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('handles tracking the same promise multiple times', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $promise = async(fn() => await(delay(1.0)));
 
@@ -721,7 +721,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('works with immediately resolved promises', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $promise = $token->track(Promise::resolved('immediate'));
 
@@ -731,7 +731,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('handles await() with cancelled token before delay starts', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $cts->cancel();
 
@@ -763,7 +763,7 @@ describe('CancellationToken Integration Tests', function () {
     describe('CancellationTokenSource Features', function () {
         it('creates token source with timeout', function () {
             $cts = new CancellationTokenSource(0.1);
-            $token = $cts->token();
+            $token = $cts->token;
 
             expect($token->isCancelled())->toBeFalse();
 
@@ -777,10 +777,10 @@ describe('CancellationToken Integration Tests', function () {
             $cts2 = new CancellationTokenSource();
 
             $linkedCts = CancellationTokenSource::createLinkedTokenSource(
-                $cts1->token(),
-                $cts2->token()
+                $cts1->token,
+                $cts2->token
             );
-            $linkedToken = $linkedCts->token();
+            $linkedToken = $linkedCts->token;
 
             expect($linkedToken->isCancelled())->toBeFalse();
 
@@ -796,16 +796,16 @@ describe('CancellationToken Integration Tests', function () {
             $cts2 = new CancellationTokenSource();
 
             $linkedCts = CancellationTokenSource::createLinkedTokenSource(
-                $cts1->token(),
-                $cts2->token()
+                $cts1->token,
+                $cts2->token
             );
 
-            expect($linkedCts->token()->isCancelled())->toBeTrue();
+            expect($linkedCts->token->isCancelled())->toBeTrue();
         });
 
         it('allows resetting cancelAfter timeout', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $cts->cancelAfter(0.05);
             $cts->cancelAfter(0.2);
@@ -833,7 +833,7 @@ describe('CancellationToken Integration Tests', function () {
     describe('CancellationTokenRegistration', function () {
         it('allows disposing of callback registration', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
             $called = false;
 
             $registration = $token->onCancel(function () use (&$called) {
@@ -849,7 +849,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('handles disposing registration multiple times', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $registration = $token->onCancel(fn() => null);
 
@@ -861,7 +861,7 @@ describe('CancellationToken Integration Tests', function () {
 
         it('returns pre-disposed registration for already cancelled token', function () {
             $cts = new CancellationTokenSource();
-            $token = $cts->token();
+            $token = $cts->token;
 
             $cts->cancel();
 
