@@ -238,7 +238,7 @@ describe('Promise Static Methods Integration', function () {
             }
         });
 
-        it('does not cancel async function wrappers, only direct cancellable promises', function () {
+        it('cancel async function wrappers', function () {
             $completed = [];
 
             $immediatePromise = Promise::resolved('immediate')->then(function ($value) use (&$completed) {
@@ -263,6 +263,29 @@ describe('Promise Static Methods Integration', function () {
             $result = await($promise);
 
             expect($result)->toBe('immediate');
+            expect($completed)->toBe(['immediate']);
+        });
+
+        it('only cancel async function wrappers, not the promise inside of it', function () {
+            $completed = [];
+
+            $immediatePromise = Promise::resolved('immediate')->then(function ($value) use (&$completed) {
+                $completed[] = 'immediate';
+                return $value;
+            });
+
+            $delayedPromise = async(function () use (&$completed) {
+                await(delay(0.1));
+                $completed[] = 'delayed-async';
+                return 'delayed';
+            });
+
+            $promise = Promise::race([$immediatePromise, $delayedPromise]);
+            $result = await($promise);
+
+            expect($result)->toBe('immediate');
+            expect($delayedPromise->isCancelled())->toBeTrue();
+            await(delay(0.15));
             expect($completed)->toBe(['immediate', 'delayed-async']);
         });
 
