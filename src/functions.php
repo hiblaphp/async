@@ -76,19 +76,10 @@ function async(callable $function): PromiseInterface
 /**
  * Wrap a callable to return a new callable that executes asynchronously.
  *
- * @template TReturn The return type of the function
+ * @template TReturn
  *
- * @param  callable(): TReturn  $function  The function to wrap
- * @return callable(): PromiseInterface<TReturn> An async version of the function
- *
- * ```php
- * $asyncGreet = asyncFn(function($name) {
- *     return "Hello, $name!";
- * });
- *
- * $promise = $asyncGreet('World');
- * $result = await($promise); // "Hello, World!"
- * ```
+ * @param  callable(mixed...): TReturn  $function  The function to wrap
+ * @return callable(mixed...): PromiseInterface<TReturn> An async version of the function
  */
 function asyncFn(callable $function): callable
 {

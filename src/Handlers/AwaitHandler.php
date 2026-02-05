@@ -30,7 +30,7 @@ final readonly class AwaitHandler
         $fiber = Fiber::getCurrent();
 
         if ($fiber === null) {
-            return $promise->wait(false);
+            return $promise->wait();
         }
 
         if ($promise->isCancelled()) {
