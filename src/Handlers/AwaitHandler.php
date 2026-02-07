@@ -8,7 +8,7 @@ use Exception;
 use Fiber;
 use Hibla\Cancellation\CancellationToken;
 use Hibla\EventLoop\Loop;
-use Hibla\Promise\Exceptions\PromiseCancelledException;
+use Hibla\Promise\Exceptions\CancelledException;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Throwable;
 
@@ -34,7 +34,7 @@ final readonly class AwaitHandler
         }
 
         if ($promise->isCancelled()) {
-            throw new PromiseCancelledException('Cannot await a cancelled promise');
+            throw new CancelledException('Cannot await a cancelled promise');
         }
 
         $result = null;
@@ -60,7 +60,7 @@ final readonly class AwaitHandler
 
         //@phpstan-ignore-next-line Promise can be cancelled midflight
         if ($promise->isCancelled()) {
-            throw new PromiseCancelledException('Promise was cancelled during await');
+            throw new CancelledException('Promise was cancelled during await');
         }
 
         if ($error !== null) {

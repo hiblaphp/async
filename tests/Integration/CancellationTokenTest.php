@@ -8,7 +8,7 @@ use function Hibla\delay;
 use Hibla\Cancellation\CancellationToken;
 use Hibla\Cancellation\CancellationTokenSource;
 use Hibla\EventLoop\Loop;
-use Hibla\Promise\Exceptions\PromiseCancelledException;
+use Hibla\Promise\Exceptions\CancelledException;
 use Hibla\Promise\Exceptions\TimeoutException;
 use Hibla\Promise\Promise;
 
@@ -80,7 +80,7 @@ describe('CancellationToken Integration Tests', function () {
             $cts->cancelAfter(0.1);
 
             expect(fn() => await($promise))
-                ->toThrow(PromiseCancelledException::class);
+                ->toThrow(CancelledException::class);
         });
 
         it('allows await() without token parameter', function () {
@@ -130,7 +130,7 @@ describe('CancellationToken Integration Tests', function () {
             try {
                 await($promise);
                 expect(false)->toBeTrue('Should have thrown exception');
-            } catch (PromiseCancelledException $e) {
+            } catch (CancelledException $e) {
                 expect($steps)->toBe(['step1']);
             }
         });
@@ -209,7 +209,7 @@ describe('CancellationToken Integration Tests', function () {
             try {
                 await($promise);
                 expect(false)->toBeTrue('Should have thrown exception');
-            } catch (PromiseCancelledException $e) {
+            } catch (CancelledException $e) {
                 expect($steps)->toBe(['step1']);
             }
         });
@@ -264,7 +264,7 @@ describe('CancellationToken Integration Tests', function () {
             try {
                 await($promise);
                 expect(false)->toBeTrue('Should have thrown exception');
-            } catch (PromiseCancelledException $e) {
+            } catch (CancelledException $e) {
                 expect($steps)->toContain('outer-start');
                 expect($steps)->toContain('inner-start');
                 expect($steps)->not->toContain('inner-end');
@@ -421,7 +421,7 @@ describe('CancellationToken Integration Tests', function () {
             $cts->cancel();
 
             expect(fn() => $token->throwIfCancelled())
-                ->toThrow(PromiseCancelledException::class, 'Operation was cancelled');
+                ->toThrow(CancelledException::class, 'Operation was cancelled');
         });
 
         it('does not throw if token is not cancelled', function () {
@@ -456,7 +456,7 @@ describe('CancellationToken Integration Tests', function () {
             try {
                 await($promise);
                 expect(false)->toBeTrue('Should have thrown exception');
-            } catch (PromiseCancelledException $e) {
+            } catch (CancelledException $e) {
                 expect($e->getMessage())->toBe('Operation was cancelled');
                 expect($steps)->toBe(['step1']);
             }
@@ -629,7 +629,7 @@ describe('CancellationToken Integration Tests', function () {
             try {
                 await($promise);
                 expect(false)->toBeTrue('Should have been cancelled');
-            } catch (PromiseCancelledException $e) {
+            } catch (CancelledException $e) {
                 expect($workflow)->toBe(['start', 'data1']);
             }
         });
@@ -660,7 +660,7 @@ describe('CancellationToken Integration Tests', function () {
             try {
                 await($promise);
                 expect(false)->toBeTrue('Should have been cancelled');
-            } catch (PromiseCancelledException $e) {
+            } catch (CancelledException $e) {
                 expect($workflow)->toBe(['start', 'data1']);
             }
         });
@@ -742,7 +742,7 @@ describe('CancellationToken Integration Tests', function () {
             });
 
             expect(fn() => await($promise))
-                ->toThrow(PromiseCancelledException::class);
+                ->toThrow(CancelledException::class);
         });
 
         it('works when await() token is null explicitly', function () {
