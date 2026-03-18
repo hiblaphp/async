@@ -64,10 +64,12 @@ final readonly class AwaitHandler
         }
 
         if ($error !== null) {
+            // @phpstan-ignore-next-line Promise can be rejected with a non-Throwable
             if ($error instanceof Throwable) {
                 throw $error;
             }
 
+            // @phpstan-ignore-next-line Promise can be rejected with a non-Throwable
             $errorMessage = match (true) {
                 \is_string($error) => $error,
                 \is_object($error) && method_exists($error, '__toString') => (string) $error,
