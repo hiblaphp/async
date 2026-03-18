@@ -30,6 +30,24 @@ function definition.
   inside `async()`. Falls back to blocking sleep outside.
 
 ---
+## Contents
+
+- [Fibers and Coroutines](#fibers-and-coroutines)
+- [Installation](#installation)
+- [The Function Coloring Problem](#the-function-coloring-problem)
+- [async() — Running Code Concurrently](#async--running-code-concurrently)
+- [await() — Suspending Until a Promise Settles](#await--suspending-until-a-promise-settles)
+- [No Function Coloring in Practice](#no-function-coloring-in-practice)
+- [asyncFn() — Wrapping a Callable](#asyncfn--wrapping-a-callable)
+- [sleep() — Async-Aware Pause](#sleep--async-aware-pause)
+- [inFiber() — Context Detection](#infiber--context-detection)
+- [Combining with Promise Combinators](#combining-with-promise-combinators)
+- [Cancellation inside async()](#cancellation-inside-async)
+- [Testing Async Code](#testing-async-code)
+- [Comparison with JavaScript async/await](#comparison-with-javascript-asyncawait)
+- [API Reference](#api-reference)
+- [Development](#development)
+---
 
 ## Installation
 ```bash
@@ -168,7 +186,7 @@ strategy. Write it once with `await()`, use it anywhere.
 
 ---
 
-## 1. The Function Coloring Problem
+## The Function Coloring Problem
 
 In most async ecosystems — JavaScript, Python, C# — `async` and `await` are
 keywords that live inside the function definition. The moment a function uses
@@ -203,7 +221,7 @@ means you can write your entire application using normal functions with
 
 ---
 
-## 2. `async()` — Running Code Concurrently
+## `async()` — Running Code Concurrently
 
 `async()` wraps a callable in a PHP Fiber, schedules it on the event loop,
 and returns a `Promise` that resolves with the callable's return value. The
@@ -386,7 +404,7 @@ genuinely need their own Fiber context for concurrent execution.
 
 ---
 
-## 3. `await()` — Suspending Until a Promise Settles
+## `await()` — Suspending Until a Promise Settles
 
 `await()` suspends the current Fiber until the given promise settles, then
 returns the resolved value or throws the rejection reason.
@@ -487,7 +505,7 @@ async(function () use ($cts) {
 
 ---
 
-## 4. No Function Coloring in Practice
+## No Function Coloring in Practice
 
 The full power of the no-coloring design becomes clear when you write library
 code that uses `await()` internally. The same code works in every context
@@ -542,7 +560,7 @@ by the caller.
 
 ---
 
-## 5. `asyncFn()` — Wrapping a Callable
+## `asyncFn()` — Wrapping a Callable
 
 `asyncFn()` wraps a callable so that every call to it automatically runs
 inside `async()` and returns a `Promise`. Useful when you want to convert
@@ -580,7 +598,7 @@ await(Promise::concurrent(
 
 ---
 
-## 6. `sleep()` — Async-Aware Pause
+## `sleep()` — Async-Aware Pause
 
 The `sleep()` function from `hiblaphp/async` is an async-aware replacement
 for PHP's native `sleep()`. It accepts fractional seconds — `sleep(0.5)` for
@@ -635,7 +653,7 @@ async(function () {
 
 ---
 
-## 7. `inFiber()` — Context Detection
+## `inFiber()` — Context Detection
 
 `inFiber()` returns `true` if the current code is executing inside a PHP
 Fiber. Useful for writing code that needs to behave differently depending
@@ -660,7 +678,7 @@ different blocking behaviors.
 
 ---
 
-## 8. Combining with Promise Combinators
+## Combining with Promise Combinators
 
 `async()` returns a standard `Promise` so it composes naturally with all
 of `hiblaphp/promise`'s collection and concurrency methods:
@@ -725,7 +743,7 @@ try {
 
 ---
 
-## 9. Cancellation inside `async()`
+## Cancellation inside `async()`
 
 Pass a `CancellationToken` to `await()` calls inside `async()` blocks to
 support external cancellation of the entire workflow. When the token is
@@ -809,7 +827,7 @@ making the code easier to follow.
 
 ---
 
-## 10. Testing Async Code
+## Testing Async Code
 
 Because `await()` falls back to blocking synchronously outside a Fiber, you
 can test async code directly without any special test runner setup, event loop
@@ -850,7 +868,7 @@ in tests, with no adaptation required.
 
 ---
 
-## 11. Comparison with JavaScript async/await
+## Comparison with JavaScript async/await
 
 | | JavaScript | Hibla |
 |---|---|---|
