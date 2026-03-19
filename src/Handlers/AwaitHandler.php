@@ -37,27 +37,6 @@ final readonly class AwaitHandler
             throw new CancelledException('Cannot await a cancelled promise');
         }
 
-        if ($promise->isFulfilled()) {
-            // @phpstan-ignore-next-line Promise can be fulfilled with a non-mixed value
-            return $promise->getValue();
-        }
-
-        if ($promise->isRejected()) {
-            $reason = $promise->getReason();
-
-            if ($reason instanceof Throwable) {
-                throw $reason;
-            }
-
-            $errorMessage = match (true) {
-                \is_string($reason) => $reason,
-                \is_object($reason) && method_exists($reason, '__toString') => (string) $reason,
-                default => 'Promise rejected with: ' . var_export($reason, true)
-            };
-
-            throw new Exception($errorMessage);
-        }
-
         $result = null;
         $error = null;
 
