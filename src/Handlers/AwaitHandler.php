@@ -38,6 +38,7 @@ final readonly class AwaitHandler
         }
 
         if ($promise->isFulfilled()) {
+            // @phpstan-ignore-next-line Promise can be fulfilled with a non-mixed value
             return $promise->getValue();
         }
 
