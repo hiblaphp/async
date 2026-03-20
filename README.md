@@ -15,30 +15,39 @@ function definition.
 
 ## Contents
 
-### Fundamentals
+**Getting started**
 - [Installation](#installation)
 - [Introduction](#introduction)
 - [The Function Coloring Problem](#the-function-coloring-problem)
 - [Fibers and Coroutines](#fibers-and-coroutines)
 
-### Core Usage
-- [async() — Running Code Concurrently](#async--running-code-concurrently)
-- [await() — Suspending Until a Promise Settles](#await--suspending-until-a-promise-settles)
+**Core usage**
+- [`async()` — Running Code Concurrently](#async--running-code-concurrently)
+  - [One fiber runs at a time — never block inside `async()`](#one-fiber-runs-at-a-time--never-block-inside-async)
+  - [Exceptions inside `async()`](#exceptions-inside-async)
+  - [Avoid unnecessary wrapping](#avoid-unnecessary-wrapping)
+- [`await()` — Suspending Until a Promise Settles](#await--suspending-until-a-promise-settles)
+  - [Context-independent behavior](#context-independent-behavior)
+  - [Rejection and cancellation](#rejection-and-cancellation)
+  - [With `CancellationToken`](#with-cancellationtoken)
 - [No Function Coloring in Practice](#no-function-coloring-in-practice)
 
-### Features
-- [asyncFn() — Wrapping a Callable](#asyncfn--wrapping-a-callable)
-- [sleep() — Async-Aware Pause](#sleep--async-aware-pause)
-- [inFiber() — Context Detection](#infiber--context-detection)
-- [Cancellation inside async()](#cancellation-inside-async)
+**Features**
+- [`asyncFn()` — Wrapping a Callable](#asyncfn--wrapping-a-callable)
+- [`sleep()` — Async-Aware Pause](#sleep--async-aware-pause)
+- [`inFiber()` — Context Detection](#infiber--context-detection)
+- [Cancellation inside `async()`](#cancellation-inside-async)
+  - [Automatic resource cleanup without `track()`](#automatic-resource-cleanup-without-track)
 - [Combining with Promise Combinators](#combining-with-promise-combinators)
 
-### Reference
+**Testing**
 - [Testing Async Code](#testing-async-code)
+
+**Reference**
 - [Comparison with JavaScript async/await](#comparison-with-javascript-asyncawait)
 - [API Reference](#api-reference)
 
-### Meta
+**Meta**
 - [Development](#development)
 - [Credits](#credits)
 - [License](#license)
@@ -100,7 +109,7 @@ cooperatively under the hood.
 In JavaScript, Python, and C#, `async` and `await` are keywords that live
 inside the function definition. The moment a function uses `await`, it must
 be marked `async`, which changes its return type, which forces every caller
-to also be `async`. The color spreads upward through the entire call stack.
+to also be `async`. The color spreads upward through the entire call stack:
 ```js
 // JavaScript — color spreads upward through every layer
 async function getUser(id) {         // must be async
@@ -168,7 +177,7 @@ calls `await()` on a pending promise, it calls `Fiber::suspend()` internally,
 freezing the entire call stack and returning control to the event loop. When
 the promise resolves, `Loop::scheduleFiber()` queues the Fiber to be resumed,
 and the event loop restores the full call stack and continues execution from
-the suspension point.
+the suspension point:
 ```php
 function fetchUserProfile(int $id): PromiseInterface
 {
@@ -181,8 +190,8 @@ function fetchUserProfile(int $id): PromiseInterface
 }
 
 async(function () {
-    // Multiple pages load concurrently because each async() call
-    // runs in its own fiber and suspends independently at each await()
+    // Multiple profiles load concurrently because each async() call
+    // runs in its own Fiber and suspends independently at each await()
     [$page1, $page2, $page3] = await(Promise::all([
         fetchUserProfile(1),
         fetchUserProfile(2),
@@ -198,7 +207,7 @@ async(function () {
 `async()` wraps a callable in a PHP Fiber, schedules it on the event loop,
 and returns a `Promise` that resolves with the callable's return value. The
 callable does not run immediately — it is queued in the Fiber phase of the
-next event loop iteration.
+next event loop iteration:
 ```php
 use function Hibla\async;
 
@@ -234,6 +243,8 @@ Loop::run();
 echo microtime(true) - $start; // ~1.0
 ```
 
+---
+
 ### One fiber runs at a time — never block inside `async()`
 
 The event loop runs only one Fiber at a time. Fibers are cooperatively
@@ -243,7 +254,7 @@ scheduled — a Fiber runs until it explicitly suspends via `await()` or
 A **blocking call** inside a Fiber — PHP's native `sleep()`, a synchronous
 database query, `file_get_contents()`, or any other call that blocks the OS
 thread — stalls the **entire event loop** for its duration. No other Fiber
-runs, no timers fire, no I/O is processed until the blocking call returns.
+runs, no timers fire, no I/O is processed until the blocking call returns:
 ```php
 // Wrong — blocks the entire loop for 2 seconds
 async(function () {
@@ -264,6 +275,8 @@ of `\sleep($n)`, stream watchers via `hiblaphp/stream` instead of blocking
 `fread()`. If you need to run genuinely blocking work or CPU-bound tasks,
 offload them to a separate process via `hiblaphp/parallel` rather than
 running them inside a Fiber.
+
+---
 
 ### Exceptions inside `async()`
 
@@ -288,6 +301,8 @@ async(function () {
     }
 });
 ```
+
+---
 
 ### Avoid unnecessary wrapping
 
@@ -343,13 +358,15 @@ $promise = async(function () {
 ## `await()` — Suspending Until a Promise Settles
 
 `await()` suspends the current Fiber until the given promise settles, then
-returns the resolved value or throws the rejection reason.
+returns the resolved value or throws the rejection reason:
 ```php
 use function Hibla\await;
 
 $user = await(fetchUser(1));
 echo $user->name;
 ```
+
+---
 
 ### Context-independent behavior
 
@@ -376,19 +393,7 @@ This context-independence is what eliminates function coloring. A function
 that calls `await()` works correctly regardless of where it is called from —
 it does not need to know or care whether it is inside a Fiber.
 
-### Already-settled promises
-
-If the promise passed to `await()` is already fulfilled at the time of the
-call, `await()` returns the value immediately without suspending — whether
-inside or outside a Fiber. If it is already rejected, it throws immediately.
-If it is already cancelled, it throws `CancelledException` immediately.
-```php
-$promise = Promise::resolved('immediate');
-
-// Both contexts return immediately — no suspension, no event loop tick
-$value = await($promise);                // outside Fiber
-async(fn() => $value = await($promise)); // inside Fiber — same behavior
-```
+---
 
 ### Rejection and cancellation
 
@@ -414,6 +419,8 @@ async(function () use ($token) {
     }
 });
 ```
+
+---
 
 ### With `CancellationToken`
 
@@ -503,7 +510,7 @@ inside `async()` and returns a `Promise`. Useful when you want to convert
 an existing function into a reusable async factory without changing the
 original function.
 
-The same performance considerations from the "avoid unnecessary wrapping"
+The same performance considerations from the [avoid unnecessary wrapping](#avoid-unnecessary-wrapping)
 section apply — only use it when the wrapped function genuinely needs its
 own Fiber context for concurrent execution:
 ```php
@@ -563,7 +570,6 @@ async(function () {
 > `sleep()` and Hibla's `sleep()` have the same name — if you forget the
 > import you will silently call PHP's native blocking `sleep()` instead,
 > stalling the entire event loop with no error or warning:
->
 > ```php
 > use function Hibla\sleep; // required — do not omit
 >
@@ -644,6 +650,8 @@ If the token is already cancelled before the first `await()` inside the
 Fiber runs, the first `await()` call throws `CancelledException` immediately
 without suspending.
 
+---
+
 ### Automatic resource cleanup without `track()`
 
 When you pass a token to `await()`, the promise is automatically tracked by
@@ -674,7 +682,7 @@ at the `await()` call site where the suspension happens.
 ## Combining with Promise Combinators
 
 `async()` returns a standard `Promise` so it composes naturally with all
-of `hiblaphp/promise`'s collection and concurrency methods:
+of `hiblaphp/promise`'s collection and concurrency methods.
 
 ### Running tasks concurrently with `Promise::all()`
 ```php
@@ -791,8 +799,6 @@ difference is what eliminates function coloring entirely.
 
 ## API Reference
 
-### Functions
-
 | Function | Description |
 |---|---|
 | `async(callable $function): PromiseInterface` | Wrap a callable in a Fiber and schedule it on the event loop. Returns a Promise that resolves with the callable's return value. The callable does not run immediately — it is queued in the next Fiber phase. |
@@ -804,8 +810,6 @@ difference is what eliminates function coloring entirely.
 ---
 
 ## Development
-
-### Running Tests
 ```bash
 git clone https://github.com/hiblaphp/async.git
 cd async
