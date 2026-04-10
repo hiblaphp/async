@@ -5,6 +5,8 @@
 `hiblaphp/async` brings `async` and `await` to PHP as plain functions built on top of PHP 8.1 Fibers and the Hibla event loop. Unlike JavaScript, Python, or C#, `await()` works in both fiber and non-fiber contexts. You write normal functions and lift them into concurrency at the call site, not inside the function definition.
 
 [![Latest Release](https://img.shields.io/github/release/hiblaphp/async.svg?style=flat-square)](https://github.com/hiblaphp/async/releases)
+[![Tests](https://github.com/hiblaphp/async/actions/workflows/test.yml/badge.svg)](https://github.com/hiblaphp/async/actions/workflows/test.yml)
+[![Total Downloads](https://img.shields.io/packagist/dt/hiblaphp/async.svg?style=flat-square)](https://packagist.org/packages/hiblaphp/async)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](./LICENSE)
 
 ---
@@ -12,12 +14,14 @@
 ## Contents
 
 **Getting started**
+
 - [Installation](#installation)
 - [Introduction](#introduction)
 - [The Function Coloring Problem](#the-function-coloring-problem)
 - [Fibers and Coroutines](#fibers-and-coroutines)
 
 **Core usage**
+
 - [`async()` — Running Code Concurrently](#async--running-code-concurrently)
   - [One fiber runs at a time — never block inside `async()`](#one-fiber-runs-at-a-time--never-block-inside-async)
   - [Exceptions inside `async()`](#exceptions-inside-async)
@@ -29,6 +33,7 @@
 - [No Function Coloring in Practice](#no-function-coloring-in-practice)
 
 **Features**
+
 - [`asyncFn()` — Wrapping a Callable](#asyncfn--wrapping-a-callable)
 - [`sleep()` — Async-Aware Pause](#sleep--async-aware-pause)
 - [`inFiber()` — Context Detection](#infiber--context-detection)
@@ -37,13 +42,16 @@
 - [Combining with Promise Combinators](#combining-with-promise-combinators)
 
 **Testing**
+
 - [Testing Async Code](#testing-async-code)
 
 **Reference**
+
 - [Comparison with JavaScript async/await](#comparison-with-javascript-asyncawait)
 - [API Reference](#api-reference)
 
 **Meta**
+
 - [Development](#development)
 - [Credits](#credits)
 - [License](#license)
@@ -51,11 +59,13 @@
 ---
 
 ## Installation
+
 ```bash
 composer require hiblaphp/async
 ```
 
 **Requirements:**
+
 - PHP 8.3+
 - `hiblaphp/event-loop`
 - `hiblaphp/promise`
@@ -81,18 +91,21 @@ In JavaScript, Python, and C#, `async` and `await` are keywords that live inside
 
 ```js
 // JavaScript — color spreads upward through every layer
-async function getUser(id) {         // must be async
-    return await fetchUser(id);      // uses await
+async function getUser(id) {
+  // must be async
+  return await fetchUser(id); // uses await
 }
 
-async function buildPage(userId) {   // must be async because getUser is async
-    const user = await getUser(userId);
-    return user;
+async function buildPage(userId) {
+  // must be async because getUser is async
+  const user = await getUser(userId);
+  return user;
 }
 
-async function handleRequest(req) {  // must be async because buildPage is async
-    const page = await buildPage(req.userId);
-    return page;
+async function handleRequest(req) {
+  // must be async because buildPage is async
+  const page = await buildPage(req.userId);
+  return page;
 }
 ```
 
@@ -229,6 +242,7 @@ $promise = async(function () {
 
 $promise->catch(fn($e) => print($e->getMessage())); // Something went wrong
 ```
+
 ```php
 async(function () {
     try {
@@ -488,6 +502,7 @@ async(function () {
 ```
 
 > **Important:** Always import `Hibla\sleep` explicitly. PHP's native `sleep()` and Hibla's `sleep()` have the same name. If you forget the import you will silently call PHP's native blocking `sleep()` instead, stalling the entire event loop with no error or warning:
+>
 > ```php
 > use function Hibla\sleep; // required — do not omit
 >
@@ -587,6 +602,7 @@ Passing the token directly to `await()` is the preferred pattern inside `async()
 `async()` returns a standard `Promise` so it composes naturally with all of `hiblaphp/promise`'s collection and concurrency methods.
 
 ### Running tasks concurrently with `Promise::all()`
+
 ```php
 [$users, $products, $stats] = await(Promise::all([
     async(fn() => fetchUsers()),
@@ -596,6 +612,7 @@ Passing the token directly to `await()` is the preferred pattern inside `async()
 ```
 
 ### Concurrency limiting with `Promise::concurrent()`
+
 ```php
 $results = await(Promise::concurrent(
     array_map(
@@ -612,6 +629,7 @@ $results = await(Promise::concurrent(
 ```
 
 ### Racing with `Promise::race()`
+
 ```php
 $fastest = await(Promise::race([
     async(fn() => fetchFromRegionA()),
@@ -621,6 +639,7 @@ $fastest = await(Promise::race([
 ```
 
 ### Timeout with `Promise::timeout()`
+
 ```php
 $cts = new CancellationTokenSource();
 
@@ -677,40 +696,43 @@ This is one of the strongest practical advantages of context-independent `await(
 
 ## Comparison with JavaScript async/await
 
-| | JavaScript | Hibla |
-|---|---|---|
-| `await` usable in sync functions | No, syntax error | Yes, falls back to blocking |
-| Function coloring | Yes, spreads upward | No, color lives at call site |
-| Marking a function async | Required (`async function`) | Not required |
-| Return type change | Yes, always returns `Promise` | No, return type unchanged |
-| Concurrency primitive | `async function` | `async(fn() => ...)` at call site |
-| Already-settled promise | Returns on next microtask | Returns immediately, no suspension |
-| Context detection | Not available | `inFiber()` |
-| Testing async code | Requires async test runner | Plain `await()`, no setup needed |
+|                                  | JavaScript                    | Hibla                              |
+| -------------------------------- | ----------------------------- | ---------------------------------- |
+| `await` usable in sync functions | No, syntax error              | Yes, falls back to blocking        |
+| Function coloring                | Yes, spreads upward           | No, color lives at call site       |
+| Marking a function async         | Required (`async function`)   | Not required                       |
+| Return type change               | Yes, always returns `Promise` | No, return type unchanged          |
+| Concurrency primitive            | `async function`              | `async(fn() => ...)` at call site  |
+| Already-settled promise          | Returns on next microtask     | Returns immediately, no suspension |
+| Context detection                | Not available                 | `inFiber()`                        |
+| Testing async code               | Requires async test runner    | Plain `await()`, no setup needed   |
 
 ---
 
 ## API Reference
 
-| Function | Description |
-|---|---|
-| `async(callable $function): PromiseInterface` | Wrap a callable in a Fiber and schedule it on the event loop. Returns a Promise that resolves with the callable's return value. The callable does not run immediately; it is queued in the next Fiber phase. |
+| Function                                                             | Description                                                                                                                                                                                                                                                                      |
+| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `async(callable $function): PromiseInterface`                        | Wrap a callable in a Fiber and schedule it on the event loop. Returns a Promise that resolves with the callable's return value. The callable does not run immediately; it is queued in the next Fiber phase.                                                                     |
 | `await(PromiseInterface $promise, ?CancellationToken $token): mixed` | Suspend the current Fiber until the promise settles (inside Fiber), or block synchronously (outside Fiber). Returns immediately without suspending for already-settled promises. Automatically tracks the promise on the token if provided. Throws on rejection or cancellation. |
-| `asyncFn(callable $function): callable` | Wrap a callable so every call runs inside `async()` and returns a Promise. Creates a new Fiber per call. |
-| `sleep(float $seconds): void` | Suspend the current Fiber non-blocking (inside Fiber), or block synchronously (outside Fiber). Accepts fractional seconds. Always import explicitly, as PHP's native `sleep()` has the same name. |
-| `inFiber(): bool` | Returns true if currently executing inside a PHP Fiber. |
+| `asyncFn(callable $function): callable`                              | Wrap a callable so every call runs inside `async()` and returns a Promise. Creates a new Fiber per call.                                                                                                                                                                         |
+| `sleep(float $seconds): void`                                        | Suspend the current Fiber non-blocking (inside Fiber), or block synchronously (outside Fiber). Accepts fractional seconds. Always import explicitly, as PHP's native `sleep()` has the same name.                                                                                |
+| `inFiber(): bool`                                                    | Returns true if currently executing inside a PHP Fiber.                                                                                                                                                                                                                          |
 
 ---
 
 ## Development
+
 ```bash
 git clone https://github.com/hiblaphp/async.git
 cd async
 composer install
 ```
+
 ```bash
 ./vendor/bin/pest
 ```
+
 ```bash
 ./vendor/bin/phpstan analyse
 ```
