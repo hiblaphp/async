@@ -67,7 +67,7 @@ composer require hiblaphp/async:"^1.0@alpha"
 
 **Requirements:**
 
-- PHP 8.3+
+- PHP 8.4+
 - `hiblaphp/event-loop`
 - `hiblaphp/promise`
 - `hiblaphp/cancellation`
