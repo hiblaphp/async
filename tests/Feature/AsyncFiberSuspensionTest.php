@@ -2,12 +2,11 @@
 
 declare(strict_types=1);
 
+use Hibla\Promise\Promise;
+
 use function Hibla\async;
 use function Hibla\asyncFn;
 use function Hibla\await;
-
-use Hibla\Promise\Promise;
-
 use function Hibla\sleep;
 
 describe('Async Suspension and Concurrency', function () {

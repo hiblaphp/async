@@ -2,15 +2,16 @@
 
 declare(strict_types=1);
 
-use function Hibla\async;
-use function Hibla\await;
-use function Hibla\delay;
 use Hibla\Cancellation\CancellationToken;
 use Hibla\Cancellation\CancellationTokenSource;
 use Hibla\EventLoop\Loop;
 use Hibla\Promise\Exceptions\CancelledException;
 use Hibla\Promise\Exceptions\TimeoutException;
 use Hibla\Promise\Promise;
+
+use function Hibla\async;
+use function Hibla\await;
+use function Hibla\delay;
 
 describe('CancellationToken Integration Tests', function () {
     describe('Basic Cancellation', function () {
@@ -38,9 +39,9 @@ describe('CancellationToken Integration Tests', function () {
             $cts = new CancellationTokenSource();
             $token = $cts->token;
 
-            $promise1 = $token->track(async(fn() => await(delay(1.0))));
-            $promise2 = $token->track(async(fn() => await(delay(1.0))));
-            $promise3 = $token->track(async(fn() => await(delay(1.0))));
+            $promise1 = $token->track(async(fn () => await(delay(1.0))));
+            $promise2 = $token->track(async(fn () => await(delay(1.0))));
+            $promise3 = $token->track(async(fn () => await(delay(1.0))));
 
             expect($token->getTrackedCount())->toBe(3);
 
@@ -60,7 +61,7 @@ describe('CancellationToken Integration Tests', function () {
 
             expect($token->isCancelled())->toBeTrue();
 
-            $promise = $token->track(async(fn() => 'should be cancelled'));
+            $promise = $token->track(async(fn () => 'should be cancelled'));
 
             expect($promise->isCancelled())->toBeTrue();
         });
@@ -79,8 +80,9 @@ describe('CancellationToken Integration Tests', function () {
 
             $cts->cancelAfter(0.1);
 
-            expect(fn() => await($promise))
-                ->toThrow(CancelledException::class);
+            expect(fn () => await($promise))
+                ->toThrow(CancelledException::class)
+            ;
         });
 
         it('allows await() without token parameter', function () {
@@ -141,8 +143,8 @@ describe('CancellationToken Integration Tests', function () {
 
             $results = async(function () use ($token) {
                 return await(Promise::race([
-                    async(fn() => await(delay(2.0), $token) ?: 'slow'),
-                    async(fn() => await(delay(0.1), $token) ?: 'fast'),
+                    async(fn () => await(delay(2.0), $token) ?: 'slow'),
+                    async(fn () => await(delay(0.1), $token) ?: 'fast'),
                 ]));
             });
 
@@ -218,7 +220,7 @@ describe('CancellationToken Integration Tests', function () {
             $cts = new CancellationTokenSource();
             $token = $cts->token;
 
-            $promise1 = async(fn() => await(delay(0.05), $token));
+            $promise1 = async(fn () => await(delay(0.05), $token));
             $result1 = await($promise1);
 
             expect($result1)->toBeNull();
@@ -278,7 +280,7 @@ describe('CancellationToken Integration Tests', function () {
             $cts = new CancellationTokenSource();
             $token = $cts->token;
 
-            $promise = $token->track(async(fn() => 'quick'));
+            $promise = $token->track(async(fn () => 'quick'));
 
             expect($token->getTrackedCount())->toBe(1);
 
@@ -294,7 +296,7 @@ describe('CancellationToken Integration Tests', function () {
 
             $promise = $token->track(async(function () {
                 throw new RuntimeException('error');
-            })->catch(fn(RuntimeException $e) => $e));
+            })->catch(fn (RuntimeException $e) => $e));
 
             expect($token->getTrackedCount())->toBe(1);
 
@@ -311,7 +313,7 @@ describe('CancellationToken Integration Tests', function () {
             $cts = new CancellationTokenSource();
             $token = $cts->token;
 
-            $promise = $token->track(async(fn() => await(delay(1.0))));
+            $promise = $token->track(async(fn () => await(delay(1.0))));
 
             expect($token->getTrackedCount())->toBe(1);
 
@@ -328,8 +330,8 @@ describe('CancellationToken Integration Tests', function () {
             $cts = new CancellationTokenSource();
             $token = $cts->token;
 
-            $promise1 = $token->track(async(fn() => await(delay(1.0))));
-            $promise2 = $token->track(async(fn() => await(delay(1.0))));
+            $promise1 = $token->track(async(fn () => await(delay(1.0))));
+            $promise2 = $token->track(async(fn () => await(delay(1.0))));
 
             expect($token->getTrackedCount())->toBe(2);
 
@@ -420,8 +422,9 @@ describe('CancellationToken Integration Tests', function () {
 
             $cts->cancel();
 
-            expect(fn() => $token->throwIfCancelled())
-                ->toThrow(CancelledException::class, 'Operation was cancelled');
+            expect(fn () => $token->throwIfCancelled())
+                ->toThrow(CancelledException::class, 'Operation was cancelled')
+            ;
         });
 
         it('does not throw if token is not cancelled', function () {
@@ -524,10 +527,10 @@ describe('CancellationToken Integration Tests', function () {
             $childCts = new CancellationTokenSource();
             $childToken = $childCts->token;
 
-            $parentToken->onCancel(fn() => $childCts->cancel());
+            $parentToken->onCancel(fn () => $childCts->cancel());
 
-            $parentPromise = $parentToken->track(async(fn() => await(delay(1.0))));
-            $childPromise = $childToken->track(async(fn() => await(delay(1.0))));
+            $parentPromise = $parentToken->track(async(fn () => await(delay(1.0))));
+            $childPromise = $childToken->track(async(fn () => await(delay(1.0))));
 
             $parentCts->cancel();
 
@@ -595,7 +598,7 @@ describe('CancellationToken Integration Tests', function () {
                 $resourceReleased = true;
             });
 
-            $promise = $token->track(async(fn() => await(delay(1.0))));
+            $promise = $token->track(async(fn () => await(delay(1.0))));
 
             $cts->cancel();
 
@@ -706,7 +709,7 @@ describe('CancellationToken Integration Tests', function () {
             $cts = new CancellationTokenSource();
             $token = $cts->token;
 
-            $promise = async(fn() => await(delay(1.0)));
+            $promise = async(fn () => await(delay(1.0)));
 
             $token->track($promise);
             $token->track($promise);
@@ -741,8 +744,9 @@ describe('CancellationToken Integration Tests', function () {
                 return 'should not reach';
             });
 
-            expect(fn() => await($promise))
-                ->toThrow(CancelledException::class);
+            expect(fn () => await($promise))
+                ->toThrow(CancelledException::class)
+            ;
         });
 
         it('works when await() token is null explicitly', function () {
@@ -822,6 +826,7 @@ describe('CancellationToken Integration Tests', function () {
 
             $promise = async(function () use ($token) {
                 await(delay(0.05), $token);
+
                 return 'completed';
             });
 
@@ -851,7 +856,7 @@ describe('CancellationToken Integration Tests', function () {
             $cts = new CancellationTokenSource();
             $token = $cts->token;
 
-            $registration = $token->onCancel(fn() => null);
+            $registration = $token->onCancel(fn () => null);
 
             $registration->dispose();
             $registration->dispose();

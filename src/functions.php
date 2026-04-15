@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Hibla;
 
+use Exception;
 use Fiber;
-use Hibla\Async\Handlers\AsyncExecutionHandler;
-use Hibla\Async\Handlers\AwaitHandler;
 use Hibla\Cancellation\CancellationToken;
+use Hibla\EventLoop\Loop;
+use Hibla\Promise\Exceptions\CancelledException;
 use Hibla\Promise\Interfaces\PromiseInterface;
+use Hibla\Promise\Promise;
+use Throwable;
 
 /**
  * Check if the current execution context is within a PHP Fiber.
@@ -58,19 +61,24 @@ function inFiber(): bool
  *
  * @template TReturn The return type of the async function
  *
- * @param  callable(): TReturn  $function  The function to convert to async
+ * @param callable(): TReturn $function The function to convert to async
+ *
  * @return PromiseInterface<TReturn> A promise that resolves to the return value
  */
 function async(callable $function): PromiseInterface
 {
-    /** @var AsyncExecutionHandler|null $handler */
-    static $handler = null;
+    /** @var Promise<TReturn> */
+    return new Promise(static function (callable $resolve, callable $reject) use ($function): void {
+        $fiber = new Fiber(static function () use ($function, $resolve, $reject): void {
+            try {
+                $resolve($function());
+            } catch (Throwable $e) {
+                $reject($e);
+            }
+        });
 
-    if ($handler === null) {
-        $handler = new AsyncExecutionHandler();
-    }
-
-    return $handler->async($function);
+        Loop::addFiber($fiber);
+    });
 }
 
 /**
@@ -78,13 +86,14 @@ function async(callable $function): PromiseInterface
  *
  * @template TReturn
  *
- * @param  callable(mixed...): TReturn  $function  The function to wrap
+ * @param callable(mixed...): TReturn $function The function to wrap
+ *
  * @return callable(mixed...): PromiseInterface<TReturn> An async version of the function
  */
 function asyncFn(callable $function): callable
 {
     return static function (mixed ...$args) use ($function): PromiseInterface {
-        return async(static fn() => $function(...$args));
+        return async(static fn () => $function(...$args));
     };
 }
 
@@ -110,24 +119,74 @@ function asyncFn(callable $function): callable
  * // Outside async context - blocks until resolved
  * $result = await($promise);
  * ```
+ *
  * @template TValue The expected type of the resolved value from the promise.
  *
- * @param  PromiseInterface<TValue>  $promise  The promise to await.
- * @param  CancellationToken|null  $cancellationToken  Optional cancellation token to track promise cancellation.
+ * @param PromiseInterface<TValue> $promise The promise to await.
+ * @param CancellationToken|null $cancellationToken Optional cancellation token to track promise cancellation.
+ *
  * @return TValue The resolved value of the promise.
  *
- * @throws \Exception If the promise is rejected, this method throws the rejection reason.
+ * @throws Exception If the promise is rejected, this method throws the rejection reason.
  */
 function await(PromiseInterface $promise, ?CancellationToken $cancellationToken = null): mixed
 {
-    /** @var AwaitHandler|null $handler */
-    static $handler = null;
-
-    if ($handler === null) {
-        $handler = new AwaitHandler();
+    if ($cancellationToken !== null) {
+        $cancellationToken->track($promise);
     }
 
-    return $handler->await($promise, $cancellationToken);
+    $fiber = Fiber::getCurrent();
+
+    if ($fiber === null) {
+        return $promise->wait();
+    }
+
+    if ($promise->isCancelled()) {
+        throw new CancelledException('Cannot await a cancelled promise');
+    }
+
+    $result = null;
+    $error = null;
+
+    $promise
+        ->then(static function ($value) use (&$result, $fiber): void {
+            $result = $value;
+            Loop::scheduleFiber($fiber);
+        })
+        ->catch(static function ($reason) use (&$error, $fiber): void {
+            $error = $reason;
+            Loop::scheduleFiber($fiber);
+        })
+        ->onCancel(static function () use ($fiber): void {
+            Loop::scheduleFiber($fiber);
+        })
+    ;
+
+    Fiber::suspend();
+
+    //@phpstan-ignore-next-line Promise can be cancelled midflight
+    if ($promise->isCancelled()) {
+        throw new CancelledException('Promise was cancelled during await');
+    }
+
+    if ($error !== null) {
+        // @phpstan-ignore-next-line Promise can be rejected with a non-Throwable
+        if ($error instanceof Throwable) {
+            throw $error;
+        }
+
+        // @phpstan-ignore-next-line Promise can be rejected with a non-Throwable
+        $errorMessage = match (true) {
+            \is_string($error) => $error,
+            \is_object($error) && method_exists($error, '__toString') => (string) $error,
+            default => 'Promise rejected with: ' . var_export($error, true)
+        };
+
+        throw new Exception($errorMessage);
+    }
+
+    /** @var TValue $result */
+    return $result;
 }
 
 /**
@@ -141,7 +200,8 @@ function await(PromiseInterface $promise, ?CancellationToken $cancellationToken 
  * When used inside an async context, it yields control to the event loop, enabling
  * concurrent operations. When used outside async context, it falls back to blocking behavior.
  *
- * @param  float  $seconds  Number of seconds to sleep (supports fractional seconds, e.g., 0.5 for 500ms)
+ * @param float $seconds Number of seconds to sleep (supports fractional seconds, e.g., 0.5 for 500ms)
+ *
  * @return void
  *
  * ```php

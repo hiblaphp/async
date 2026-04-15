@@ -2,13 +2,12 @@
 
 declare(strict_types=1);
 
+use Hibla\Promise\Interfaces\PromiseInterface;
+
 use function Hibla\async;
 use function Hibla\asyncFn;
 use function Hibla\await;
 use function Hibla\inFiber;
-
-use Hibla\Promise\Interfaces\PromiseInterface;
-
 use function Hibla\sleep;
 
 describe('inFiber()', function () {
