@@ -25,13 +25,13 @@ describe('CancellationToken Integration Tests', function () {
                 return 'completed';
             }));
 
-            expect($token->getTrackedCount())->toBe(1);
+            expect($token->trackCount)->toBe(1);
             expect($token->isCancelled())->toBeFalse();
 
             $cts->cancel();
 
             expect($token->isCancelled())->toBeTrue();
-            expect($token->getTrackedCount())->toBe(0);
+            expect($token->trackCount)->toBe(0);
             expect($promise->isCancelled())->toBeTrue();
         });
 
@@ -43,14 +43,14 @@ describe('CancellationToken Integration Tests', function () {
             $promise2 = $token->track(async(fn () => await(delay(1.0))));
             $promise3 = $token->track(async(fn () => await(delay(1.0))));
 
-            expect($token->getTrackedCount())->toBe(3);
+            expect($token->trackCount)->toBe(3);
 
             $cts->cancel();
 
             expect($promise1->isCancelled())->toBeTrue();
             expect($promise2->isCancelled())->toBeTrue();
             expect($promise3->isCancelled())->toBeTrue();
-            expect($token->getTrackedCount())->toBe(0);
+            expect($token->trackCount)->toBe(0);
         });
 
         it('immediately cancels promises added after token is cancelled', function () {
@@ -282,12 +282,12 @@ describe('CancellationToken Integration Tests', function () {
 
             $promise = $token->track(async(fn () => 'quick'));
 
-            expect($token->getTrackedCount())->toBe(1);
+            expect($token->trackCount)->toBe(1);
 
             $result = await($promise);
 
             expect($result)->toBe('quick');
-            expect($token->getTrackedCount())->toBe(0);
+            expect($token->trackCount)->toBe(0);
         });
 
         it('automatically untracks promises when they reject', function () {
@@ -298,7 +298,7 @@ describe('CancellationToken Integration Tests', function () {
                 throw new RuntimeException('error');
             })->catch(fn (RuntimeException $e) => $e));
 
-            expect($token->getTrackedCount())->toBe(1);
+            expect($token->trackCount)->toBe(1);
 
             try {
                 await($promise);
@@ -306,7 +306,7 @@ describe('CancellationToken Integration Tests', function () {
                 expect($e->getMessage())->toBe('error');
             }
 
-            expect($token->getTrackedCount())->toBe(0);
+            expect($token->trackCount)->toBe(0);
         });
 
         it('can manually untrack a promise', function () {
@@ -315,11 +315,11 @@ describe('CancellationToken Integration Tests', function () {
 
             $promise = $token->track(async(fn () => await(delay(1.0))));
 
-            expect($token->getTrackedCount())->toBe(1);
+            expect($token->trackCount)->toBe(1);
 
             $token->untrack($promise);
 
-            expect($token->getTrackedCount())->toBe(0);
+            expect($token->trackCount)->toBe(0);
 
             $cts->cancel();
 
@@ -333,11 +333,11 @@ describe('CancellationToken Integration Tests', function () {
             $promise1 = $token->track(async(fn () => await(delay(1.0))));
             $promise2 = $token->track(async(fn () => await(delay(1.0))));
 
-            expect($token->getTrackedCount())->toBe(2);
+            expect($token->trackCount)->toBe(2);
 
             $token->clearTracked();
 
-            expect($token->getTrackedCount())->toBe(0);
+            expect($token->trackCount)->toBe(0);
 
             $cts->cancel();
 
@@ -715,7 +715,7 @@ describe('CancellationToken Integration Tests', function () {
             $token->track($promise);
             $token->track($promise);
 
-            expect($token->getTrackedCount())->toBe(3);
+            expect($token->trackCount)->toBe(3);
 
             $cts->cancel();
 
@@ -728,7 +728,7 @@ describe('CancellationToken Integration Tests', function () {
 
             $promise = $token->track(Promise::resolved('immediate'));
 
-            expect($token->getTrackedCount())->toBe(0);
+            expect($token->trackCount)->toBe(0);
             expect($promise->value)->toBe('immediate');
         });
 
