@@ -702,7 +702,7 @@ describe('CancellationToken Integration Tests', function () {
             expect($resolved->isCancelled())->toBeFalse();
             expect($rejected->isRejected())->toBeTrue();
             expect($rejected->isCancelled())->toBeFalse();
-            expect($rejected->getReason())->toBeInstanceOf(RuntimeException::class);
+            expect($rejected->reason)->toBeInstanceOf(RuntimeException::class);
         });
 
         it('handles tracking the same promise multiple times', function () {
@@ -729,7 +729,7 @@ describe('CancellationToken Integration Tests', function () {
             $promise = $token->track(Promise::resolved('immediate'));
 
             expect($token->getTrackedCount())->toBe(0);
-            expect($promise->getValue())->toBe('immediate');
+            expect($promise->value)->toBe('immediate');
         });
 
         it('handles await() with cancelled token before delay starts', function () {
