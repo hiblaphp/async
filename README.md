@@ -523,7 +523,7 @@ await(Promise::map($records, $asyncProcess, concurrency: 10));
 The `sleep()` function from `hiblaphp/async` is an async-aware replacement for PHP's native `sleep()`. It accepts fractional seconds: `sleep(0.5)` for 500ms, `sleep(1.5)` for 1.5 seconds.
 
 - **Inside a Fiber:** suspends the current Fiber cooperatively. The event loop continues, so other fibers, timers, and I/O run while this Fiber waits.
-- **Outside a Fiber:** holds the script at that line while the event loop keeps running underneath — timers fire, I/O callbacks run, and other in-flight work continues normally while it waits.
+- **Outside a Fiber:** holds the script at that line while the event loop keeps running underneath, timers fire, I/O callbacks run, and other in-flight work continues normally while it waits.
 
 ```php
 use function Hibla\sleep;
