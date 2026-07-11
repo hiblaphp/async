@@ -6,9 +6,11 @@ namespace Hibla;
 
 use Exception;
 use Fiber;
+use Hibla\Async\AsyncEnvironment;
 use Hibla\Cancellation\CancellationToken;
 use Hibla\EventLoop\Loop;
 use Hibla\Promise\Exceptions\CancelledException;
+use Hibla\Promise\Exceptions\InvalidContextException;
 use Hibla\Promise\Interfaces\PromiseInterface;
 use Hibla\Promise\Promise;
 use Throwable;
@@ -93,7 +95,7 @@ function async(callable $function): PromiseInterface
 function asyncFn(callable $function): callable
 {
     return static function (mixed ...$args) use ($function): PromiseInterface {
-        return async(static fn () => $function(...$args));
+        return async(static fn() => $function(...$args));
     };
 }
 
@@ -138,7 +140,35 @@ function await(PromiseInterface $promise, ?CancellationToken $cancellationToken 
     $fiber = Fiber::getCurrent();
 
     if ($fiber === null) {
-        return $promise->wait();
+        if (AsyncEnvironment::isStrictAwaitEnabled()) {
+            $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+            $userCaller = null;
+
+            foreach ($backtrace as $frame) {
+                $file = $frame['file'] ?? '';
+                if (
+                    $file !== '' &&
+                    !str_contains($file, DIRECTORY_SEPARATOR . 'vendor' . DIRECTORY_SEPARATOR)
+                ) {
+                    $userCaller = $frame;
+                    break;
+                }
+            }
+
+            $caller = $userCaller ?? $backtrace[0];
+            $file = str_replace(getcwd() . DIRECTORY_SEPARATOR, '', $caller['file'] ?? 'unknown');
+            $line = $caller['line'] ?? 'unknown';
+
+            throw new InvalidContextException(
+                "Cannot call await() outside of an active Fiber context.\n" .
+                    "Maybe this code is using await() under the hood?\n" .
+                    "  Location: {$file}:{$line}\n" .
+                    "  Problem: Calling await() outside of a Fiber when strict mode is active forces a synchronous, blocking wait.\n" .
+                    "  Solution: Wrap this call or your callback in async() or asyncFn()."
+            );
+        }
+
+        return $promise->wait(); // Fallback to blocking when strict mode is off
     }
 
     if ($promise->isCancelled()) {
